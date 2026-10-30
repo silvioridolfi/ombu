@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Bloq Num apagado
+Exec=numlockx off
+OnlyShowIn=XFCE;
+NoDisplay=true

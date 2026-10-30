@@ -1,0 +1,40 @@
+#!/bin/sh
+# Se ejecuta al iniciar sesión (XFCE). Prepara el escritorio del usuario.
+DESK="$(xdg-user-dir DESKTOP 2>/dev/null)"
+[ -n "$DESK" ] || DESK="$HOME/Desktop"
+mkdir -p "$DESK"
+
+# En sesión live: ícono para instalar Ombú
+if grep -qw 'boot=live' /proc/cmdline; then
+    cp -f /usr/share/applications/ombu-instalar.desktop "$DESK/"
+fi
+
+# Lanzadores de confianza (XFCE exige ejecutable + checksum guardado con gio).
+# Requiere el paquete libglib2.0-bin (comando gio). Si falla, queda registrado.
+LOG="$HOME/.cache/ombu-session-setup.log"
+mkdir -p "$(dirname "$LOG")"
+for f in "$DESK"/*.desktop; do
+    [ -f "$f" ] || continue
+    chmod +x "$f"
+    sum="$(sha256sum "$f" | cut -d' ' -f1)"
+    gio set "$f" metadata::xfce-exe-checksum "$sum" 2>>"$LOG" \
+        || echo "No se pudo marcar como seguro: $f" >>"$LOG"
+done
+
+# Fondo de pantalla: se fija para cada monitor conectado (los nombres varían: LVDS-1, eDP-1, Virtual-1...)
+IMG=/usr/share/ombu/wallpapers/ombu.png
+if command -v xfconf-query >/dev/null 2>&1; then
+    OUTPUTS="$(xrandr --query 2>/dev/null | awk '/ connected/{print $1}')"
+    [ -n "$OUTPUTS" ] || OUTPUTS="default"
+    for o in $OUTPUTS; do
+        base="/backdrop/screen0/monitor$o/workspace0"
+        xfconf-query -c xfce4-desktop -p "$base/last-image" -n -t string -s "$IMG" 2>/dev/null \
+            || xfconf-query -c xfce4-desktop -p "$base/last-image" -s "$IMG" 2>/dev/null
+        xfconf-query -c xfce4-desktop -p "$base/image-style" -n -t int -s 5 2>/dev/null \
+            || xfconf-query -c xfce4-desktop -p "$base/image-style" -s 5 2>/dev/null
+    done
+    for p in $(xfconf-query -c xfce4-desktop -l 2>/dev/null | grep 'last-image$'); do
+        xfconf-query -c xfce4-desktop -p "$p" -s "$IMG" 2>/dev/null
+    done
+fi
+exit 0

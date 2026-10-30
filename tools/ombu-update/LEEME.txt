@@ -1,0 +1,31 @@
+ACTUALIZADOR DE OMBÚ (por pendrive)
+
+1. Copiá esta carpeta entera al pendrive.
+2. Poné adentro lo que quieras aplicar (todo es opcional):
+     fondo.png        fondo de escritorio (1920x1080 recomendado)
+     fondo-login.png  fondo de la pantalla de inicio de sesión
+     paquetes/        archivos .deb de programas nuevos
+     extra.sh         un script propio (se ejecuta como administrador)
+3. En la netbook, entrá con el usuario de soporte, abrí una terminal en la
+   carpeta del pendrive y ejecutá:
+     sudo bash actualizar.sh
+   Si la netbook tiene internet y querés también las actualizaciones de Debian:
+     sudo bash actualizar.sh --online
+4. Cerrá sesión y volvé a entrar para ver el fondo nuevo.
+
+El registro queda en /var/log/ombu-update.log
+
+DIAGNÓSTICO DEL EQUIPO (para pruebas por modelo)
+  Sin permisos de administrador, desde la carpeta del pendrive:
+     bash ombu-diagnostico.sh
+  Genera un informe .txt junto al script (modelo, BIOS/UEFI, Wi-Fi, audio,
+  cámara, batería, etc.) con una lista para completar a mano.
+
+ARREGLOS PARA NETBOOKS INSTALADAS CON LA PRIMERA IMAGEN
+     sudo bash arreglos.sh
+  - Íconos del escritorio: sin cajas blancas al hacer clic en el reloj.
+  - Bloq Num apagado al iniciar (este punto necesita internet una vez).
+  - Panel superior: volumen, batería y reloj (fecha y hora en una línea).
+    Restablece el panel de cada usuario (guarda copia .bak-ombu).
+  - Panel táctil: tocar para hacer clic.
+  Este script necesita estar en la misma carpeta que los archivos .xml y .conf.

@@ -1,0 +1,30 @@
+#!/bin/sh
+# Ombú — configuración de live-build (Debian 13 "trixie", amd64)
+set -e
+
+lb config noauto \
+  --distribution trixie \
+  --architectures amd64 \
+  --linux-flavours amd64 \
+  --archive-areas "main contrib non-free non-free-firmware" \
+  --parent-archive-areas "main contrib non-free non-free-firmware" \
+  --security true \
+  --updates true \
+  --apt-recommends false \
+  --apt-indices false \
+  --firmware-chroot false \
+  --debian-installer none \
+  --binary-image iso-hybrid \
+  --bootloaders "grub-efi,syslinux" \
+  --memtest none \
+  --win32-loader false \
+  --chroot-squashfs-compression-type zstd \
+  --chroot-squashfs-compression-level 15 \
+  --iso-application "Ombu" \
+  --iso-publisher "DTE Region 1 - Provincia de Buenos Aires" \
+  --iso-volume "OMBU" \
+  --image-name "ombu" \
+  --checksums sha256 \
+  --bootappend-live "boot=live components quiet splash locales=es_AR.UTF-8 keyboard-layouts=latam timezone=America/Argentina/Buenos_Aires hostname=ombu username=user user-fullname=Ombu" \
+  --bootappend-live-failsafe "boot=live components memtest=none nomodeset locales=es_AR.UTF-8 keyboard-layouts=latam timezone=America/Argentina/Buenos_Aires hostname=ombu username=user user-fullname=Ombu" \
+  "${@}"

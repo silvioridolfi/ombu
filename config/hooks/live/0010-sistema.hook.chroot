@@ -1,0 +1,87 @@
+#!/bin/sh
+# Ombú — configuración base del sistema (se ejecuta dentro del chroot)
+set -e
+
+# ---------- Idioma y teclado ----------
+sed -i 's/^# *es_AR.UTF-8 UTF-8/es_AR.UTF-8 UTF-8/; s/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+grep -q '^es_AR.UTF-8' /etc/locale.gen || echo 'es_AR.UTF-8 UTF-8' >> /etc/locale.gen
+locale-gen
+echo 'LANG=es_AR.UTF-8' > /etc/default/locale
+ln -sf /usr/share/zoneinfo/America/Argentina/Buenos_Aires /etc/localtime
+echo 'America/Argentina/Buenos_Aires' > /etc/timezone
+cat > /etc/default/keyboard <<EOT
+XKBMODEL="pc105"
+XKBLAYOUT="latam"
+XKBVARIANT=""
+XKBOPTIONS=""
+BACKSPACE="guess"
+EOT
+
+# ---------- Identidad ----------
+echo ombu > /etc/hostname
+cat > /etc/hosts <<EOT
+127.0.0.1   localhost
+127.0.1.1   ombu
+::1         localhost ip6-localhost ip6-loopback
+EOT
+cat > /etc/os-release <<EOT
+PRETTY_NAME="Ombú 1.1 (basado en Debian 13)"
+NAME="Ombú"
+VERSION_ID="1.1"
+VERSION="1.1"
+VERSION_CODENAME=trixie
+ID=ombu
+ID_LIKE=debian
+HOME_URL="https://abc.gob.ar"
+SUPPORT_URL="https://abc.gob.ar"
+BUG_REPORT_URL="https://abc.gob.ar"
+EOT
+printf 'Ombú 1.1 \\n \\l\n\n' > /etc/issue
+printf 'Ombú 1.1\n' > /etc/issue.net
+: > /etc/motd
+
+# ---------- Tipografías ----------
+fc-cache -f
+
+# ---------- Lanzadores del escritorio para el usuario estudiante ----------
+mkdir -p /etc/skel/Desktop
+for app in firefox-esr scratch-web pilas-bloques org.kde.gcompris tuxpaint tuxmath libreoffice-writer libreoffice-calc audacity org.kde.ktouch; do
+    f="/usr/share/applications/$app.desktop"
+    [ -f "$f" ] && cp "$f" /etc/skel/Desktop/ || echo "AVISO: falta $f"
+done
+# TurboWarp (el nombre del .desktop depende del paquete)
+tw="$(grep -il 'turbowarp' /usr/share/applications/*.desktop 2>/dev/null | head -n1 || true)"
+[ -n "$tw" ] && cp "$tw" /etc/skel/Desktop/ || echo "AVISO: TurboWarp no está instalado"
+# Lanzador propio (WebGL por software en equipos sin aceleración gráfica)
+for f in $tw /etc/skel/Desktop/"$(basename "$tw" 2>/dev/null)"; do
+    [ -f "$f" ] && sed -i 's|^Exec=[^ ]*|Exec=/usr/bin/ombu-turbowarp|' "$f"
+done
+chmod +x /etc/skel/Desktop/*.desktop 2>/dev/null || true
+
+# (El usuario estudiante se crea al instalar: ver /usr/lib/ombu/post-install.sh.
+#  Si existiera en la imagen live, user-setup no crearía el usuario de la sesión de prueba.)
+
+# ---------- Firefox: políticas (sin telemetría) ----------
+# Firefox lee /etc/firefox/policies/policies.json; se deja también junto al binario
+FFDIST="$(readlink -f /usr/lib/firefox-esr/distribution 2>/dev/null || true)"
+[ -n "$FFDIST" ] || FFDIST=/usr/lib/firefox-esr/distribution
+mkdir -p "$FFDIST"
+cp /etc/firefox/policies/policies.json "$FFDIST/policies.json"
+update-alternatives --set x-www-browser /usr/bin/firefox-esr 2>/dev/null || true
+update-alternatives --set gnome-www-browser /usr/bin/firefox-esr 2>/dev/null || true
+
+# ---------- Servicios que no hacen falta ----------
+for s in ModemManager.service cups-browsed.service; do
+    systemctl disable "$s" 2>/dev/null || true
+done
+
+# ---------- Display manager y tema de arranque ----------
+echo /usr/sbin/lightdm > /etc/X11/default-display-manager
+systemctl enable lightdm.service 2>/dev/null || true
+plymouth-set-default-theme ombu
+gtk-update-icon-cache -f /usr/share/icons/Papirus 2>/dev/null || true
+update-initramfs -u -k all
+
+# ---------- Limpieza ----------
+apt-get clean
+rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Pilas Bloques
+GenericName=Programación para primaria
+Comment=Programación por bloques de Program.AR (requiere internet)
+Exec=firefox-esr --new-window https://pilasbloques.program.ar
+Icon=/usr/share/pixmaps/ombu-bloques.png
+Terminal=false
+Categories=Education;Development;
+Keywords=pilas;bloques;programar;

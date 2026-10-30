@@ -1,0 +1,62 @@
+# Ombú — tema Plymouth (script)
+Window.SetBackgroundTopColor(0.016, 0.275, 0.431);
+Window.SetBackgroundBottomColor(0.016, 0.275, 0.431);
+
+sw = Window.GetWidth();
+sh = Window.GetHeight();
+
+bg_image = Image("bg.png");
+bg_scaled = bg_image.Scale(sw, sh);
+bg = Sprite(bg_scaled);
+bg.SetX(0);
+bg.SetY(0);
+bg.SetZ(-100);
+
+logo_image = Image("logo.png");
+logo = Sprite(logo_image);
+logo.SetX(sw / 2 - logo_image.GetWidth() / 2);
+logo.SetY(sh / 2 - logo_image.GetHeight() / 2 - 40);
+logo.SetZ(10);
+
+dte_image = Image("dte.png");
+dte = Sprite(dte_image);
+dte.SetX(sw / 2 - dte_image.GetWidth() / 2);
+dte.SetY(sh - dte_image.GetHeight() - 30);
+dte.SetZ(10);
+
+bar_bg_image = Image("bar-bg.png");
+bar_fill_image = Image("bar-fill.png");
+bar_w = bar_bg_image.GetWidth();
+bar_h = bar_bg_image.GetHeight();
+bar_x = sw / 2 - bar_w / 2;
+bar_y = sh / 2 + logo_image.GetHeight() / 2 - 10;
+
+bar_bg = Sprite(bar_bg_image);
+bar_bg.SetX(bar_x);
+bar_bg.SetY(bar_y);
+bar_bg.SetZ(10);
+
+bar_fill = Sprite();
+bar_fill.SetX(bar_x);
+bar_fill.SetY(bar_y);
+bar_fill.SetZ(11);
+
+fun progress_callback (duration, progress)
+{
+    w = Math.Int(bar_w * progress);
+    if (w < 1) w = 1;
+    if (w > bar_w) w = bar_w;
+    bar_fill.SetImage(bar_fill_image.Scale(w, bar_h));
+}
+
+Plymouth.SetBootProgressFunction(progress_callback);
+
+fun quit_callback ()
+{
+    bar_fill.SetOpacity(0);
+}
+Plymouth.SetQuitFunction(quit_callback);
+
+# Mensajes de texto (p. ej. contraseña de disco): no se usan en Ombú.
+fun message_callback (text) { }
+Plymouth.SetMessageFunction(message_callback);

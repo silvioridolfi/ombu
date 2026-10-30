@@ -1,0 +1,33 @@
+---
+componentName: ombu
+welcomeStyleCalamares: true
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 800px,540px
+windowPlacement: center
+strings:
+    productName:         Ombú
+    shortProductName:    Ombú
+    version:             1.1
+    shortVersion:        1.1
+    versionedName:       Ombú 1.1
+    shortVersionedName:  Ombú 1.1
+    bootloaderEntryName: Ombu
+    productUrl:          https://abc.gob.ar
+    supportUrl:          https://abc.gob.ar
+    knownIssuesUrl:      https://abc.gob.ar
+    releaseNotesUrl:     https://abc.gob.ar
+    donateUrl:           https://abc.gob.ar
+sidebar: widget
+navigation: widget
+images:
+    productLogo:         "ombu-logo.png"
+    productIcon:         "ombu-logo.png"
+    productWelcome:      "welcome.png"
+slideshow:               "show.qml"
+style:
+   SidebarBackground:        "#04466E"
+   SidebarText:              "#FFFFFF"
+   SidebarTextCurrent:       "#FFFFFF"
+   SidebarBackgroundCurrent: "#E52277"
+slideshowAPI: 2

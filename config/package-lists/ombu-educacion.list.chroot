@@ -1,0 +1,42 @@
+# --- Ofimática ---
+libreoffice-writer
+libreoffice-calc
+libreoffice-impress
+libreoffice-draw
+libreoffice-math
+libreoffice-gtk3
+libreoffice-style-colibre
+libreoffice-l10n-es
+libreoffice-help-es
+hunspell-es
+mythes-es
+hyphen-es
+
+# --- Navegador (sin telemetría: ver policies.json) ---
+firefox-esr
+firefox-esr-l10n-es-ar
+
+# --- Software educativo para primaria ---
+gcompris-qt
+gcompris-qt-data
+tuxpaint
+tuxpaint-config
+tuxpaint-stamps-default
+tuxpaint-plugins-default
+tuxmath
+tuxtype
+ktouch
+kturtle
+kgeography
+klettres
+khangman
+kolourpaint
+
+# --- Audio y video ---
+audacity
+parole
+gstreamer1.0-plugins-good
+gstreamer1.0-plugins-bad
+gstreamer1.0-libav
+gstreamer1.0-pulseaudio
+gstreamer1.0-pipewire

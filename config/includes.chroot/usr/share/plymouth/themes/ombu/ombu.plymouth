@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Ombu
+Description=Tema de arranque de Ombu (DTE - Provincia de Buenos Aires)
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/ombu
+ScriptFile=/usr/share/plymouth/themes/ombu/ombu.script

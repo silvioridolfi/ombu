@@ -1,0 +1,8 @@
+#!/bin/sh
+# Muestra la ventana "Acerca de Ombú"
+VERSION="1.1"
+[ -r /etc/ombu/version ] && VERSION="$(cat /etc/ombu/version)"
+exec zenity --info --no-wrap --width=460 \
+    --title="Acerca de Ombú" \
+    --icon="/usr/share/pixmaps/ombu-install.png" \
+    --text="<big><b>Ombú $VERSION</b></big>\nSistema operativo libre para las escuelas bonaerenses\n\nCreado por <b>Silvio Ridolfi</b> y el\n<b>equipo territorial de Región 1</b>\n\nDTE | Dirección de Tecnología Educativa\nProvincia de Buenos Aires\n\nBasado en Debian GNU/Linux · Sin telemetría"

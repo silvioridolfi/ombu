@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Scratch
+GenericName=Programación por bloques
+Comment=Scratch en línea (requiere internet)
+Exec=firefox-esr --new-window https://scratch.mit.edu/projects/editor/
+Icon=/usr/share/pixmaps/ombu-bloques.png
+Terminal=false
+Categories=Education;Development;
+Keywords=scratch;programacion;bloques;

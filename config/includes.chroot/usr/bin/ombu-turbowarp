@@ -1,0 +1,21 @@
+#!/bin/sh
+# Ombú — lanzador de TurboWarp.
+# En equipos con video Intel GMA 3600/3650 (netbooks G4) no hay aceleración
+# gráfica y TurboWarp dice "Sistema no es compatible (WebGL)". En ese caso se
+# lo arranca con WebGL por software (más lento, pero funciona).
+BIN=/opt/TurboWarp/turbowarp-desktop
+[ -x "$BIN" ] || BIN="$(command -v turbowarp-desktop || true)"
+[ -n "$BIN" ] || { echo "TurboWarp no está instalado"; exit 1; }
+
+FLAGS=""
+for d in /sys/bus/pci/devices/*; do
+    [ "$(cat "$d/vendor" 2>/dev/null)" = "0x8086" ] || continue
+    case "$(cat "$d/device" 2>/dev/null)" in
+        0x0be[0-9a-f]|0x8108|0x8109|0x410[0-9a-f]) FLAGS="--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist" ;;
+    esac
+done
+# Con "nomodeset" tampoco hay aceleración real.
+grep -qw nomodeset /proc/cmdline && FLAGS="--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist"
+
+# shellcheck disable=SC2086
+exec "$BIN" $FLAGS "$@"

@@ -1,0 +1,17 @@
+/* Ombú — íconos del escritorio: etiquetas siempre transparentes,
+   sin cajas blancas al perder el foco (por ejemplo, al hacer clic en el reloj). */
+XfdesktopIconView.view .label,
+XfdesktopIconView.view .label:backdrop,
+XfdesktopIconView.view:backdrop .label {
+    background-color: transparent;
+    background-image: none;
+    color: #ffffff;
+    text-shadow: 1px 1px 2px #000000;
+}
+XfdesktopIconView.view .label:selected,
+XfdesktopIconView.view .label:selected:backdrop,
+XfdesktopIconView.view:backdrop .label:selected {
+    background-color: rgba(16, 168, 192, 0.55);
+    color: #ffffff;
+    border-radius: 3px;
+}

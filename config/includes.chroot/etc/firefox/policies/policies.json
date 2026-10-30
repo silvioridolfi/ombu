@@ -1,0 +1,75 @@
+{
+  "policies": {
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true,
+    "DisablePocket": true,
+    "DisableFeedbackCommands": true,
+    "DisableFirefoxAccounts": false,
+    "DontCheckDefaultBrowser": true,
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "NoDefaultBookmarks": true,
+    "DisableProfileImport": true,
+    "OfferToSaveLogins": false,
+    "PasswordManagerEnabled": false,
+    "DNSOverHTTPS": { "Enabled": false, "Locked": true },
+    "UserMessaging": {
+      "WhatsNew": false,
+      "ExtensionRecommendations": false,
+      "FeatureRecommendations": false,
+      "UrlbarInterventions": false,
+      "SkipOnboarding": true,
+      "MoreFromMozilla": false
+    },
+    "FirefoxHome": {
+      "Search": true,
+      "TopSites": true,
+      "SponsoredTopSites": false,
+      "Highlights": false,
+      "Pocket": false,
+      "SponsoredPocket": false,
+      "Snippets": false
+    },
+    "Homepage": {
+      "URL": "https://continuemosestudiando.abc.gob.ar",
+      "Locked": false,
+      "StartPage": "homepage"
+    },
+    "SearchEngines": {
+      "Default": "DuckDuckGo"
+    },
+    "Preferences": {
+      "datareporting.healthreport.uploadEnabled": { "Value": false, "Status": "locked" },
+      "datareporting.policy.dataSubmissionEnabled": { "Value": false, "Status": "locked" },
+      "toolkit.telemetry.enabled": { "Value": false, "Status": "locked" },
+      "toolkit.telemetry.unified": { "Value": false, "Status": "locked" },
+      "toolkit.telemetry.archive.enabled": { "Value": false, "Status": "locked" },
+      "browser.ping-centre.telemetry": { "Value": false, "Status": "locked" },
+      "browser.newtabpage.activity-stream.feeds.telemetry": { "Value": false, "Status": "locked" },
+      "browser.newtabpage.activity-stream.telemetry": { "Value": false, "Status": "locked" },
+      "browser.newtabpage.activity-stream.showSponsored": { "Value": false, "Status": "locked" },
+      "browser.newtabpage.activity-stream.showSponsoredTopSites": { "Value": false, "Status": "locked" },
+      "app.shield.optoutstudies.enabled": { "Value": false, "Status": "locked" },
+      "app.normandy.enabled": { "Value": false, "Status": "locked" },
+      "network.captive-portal-service.enabled": { "Value": false, "Status": "locked" },
+      "browser.discovery.enabled": { "Value": false, "Status": "locked" },
+      "extensions.getAddons.showPane": { "Value": false, "Status": "locked" },
+      "browser.urlbar.suggest.quicksuggest.sponsored": { "Value": false, "Status": "locked" },
+      "browser.urlbar.quicksuggest.enabled": { "Value": false, "Status": "locked" },
+      "browser.crashReports.unsubmittedCheck.autoSubmit2": { "Value": false, "Status": "locked" },
+      "browser.tabs.crashReporting.sendReport": { "Value": false, "Status": "locked" },
+      "media.eme.enabled": { "Value": false, "Status": "default" },
+      "browser.startup.homepage_override.mstone": { "Value": "ignore", "Status": "default" }
+    },
+    "Bookmarks": [
+      { "Title": "Continuemos Estudiando", "URL": "https://continuemosestudiando.abc.gob.ar", "Placement": "toolbar" },
+      { "Title": "ABC - Portal educativo", "URL": "https://abc.gob.ar", "Placement": "toolbar" },
+      { "Title": "Scratch", "URL": "https://scratch.mit.edu/projects/editor/", "Placement": "toolbar" },
+      { "Title": "Pilas Bloques", "URL": "https://pilasbloques.program.ar", "Placement": "toolbar" },
+      { "Title": "Program.AR", "URL": "https://program.ar", "Placement": "toolbar" },
+      { "Title": "GeoGebra", "URL": "https://www.geogebra.org/classic", "Placement": "toolbar" },
+      { "Title": "Educ.ar", "URL": "https://www.educ.ar", "Placement": "toolbar" },
+      { "Title": "Wikipedia", "URL": "https://es.wikipedia.org", "Placement": "toolbar" }
+    ]
+  }
+}

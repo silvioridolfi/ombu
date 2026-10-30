@@ -1,0 +1,18 @@
+# --- Instalador (Calamares) y herramientas de disco ---
+calamares
+qml-module-qtquick2
+qml-module-qtquick-controls2
+qml-module-qtquick-window2
+grub-common
+grub2-common
+grub-pc-bin
+grub-efi-amd64-bin
+efibootmgr
+os-prober
+squashfs-tools
+parted
+gparted
+gnome-disk-utility
+initramfs-tools
+wamerican
+cracklib-runtime

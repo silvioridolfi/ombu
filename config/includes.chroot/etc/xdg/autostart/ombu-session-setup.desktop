@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Ombú - preparar escritorio
+Exec=/usr/lib/ombu/session-setup
+OnlyShowIn=XFCE;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

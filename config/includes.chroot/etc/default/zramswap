@@ -1,0 +1,4 @@
+# Ombú: swap comprimido en RAM (netbooks con 2-4 GB y disco lento)
+ALGO=zstd
+PERCENT=50
+PRIORITY=100

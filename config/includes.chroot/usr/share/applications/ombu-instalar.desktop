@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Instalar Ombú
+GenericName=Instalador del sistema
+Comment=Instala Ombú en esta computadora
+Exec=/usr/bin/ombu-instalar
+Icon=/usr/share/pixmaps/ombu-install.png
+Terminal=false
+Categories=System;
+StartupNotify=true

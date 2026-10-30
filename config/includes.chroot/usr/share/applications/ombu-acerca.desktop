@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Acerca de Ombú
+Comment=Créditos y versión de Ombú
+Exec=/usr/bin/ombu-acerca
+Icon=/usr/share/pixmaps/ombu-install.png
+Terminal=false
+Categories=System;Utility;

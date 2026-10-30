@@ -1,0 +1,18 @@
+label live-@FLAVOUR@
+	menu label ^Iniciar Ombu
+	menu default
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE@
+
+label live-@FLAVOUR@-video
+	menu label Ombu (^video compatible - G4)
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE@ nomodeset
+
+label live-@FLAVOUR@-failsafe
+	menu label Ombu (modo a prueba de ^fallos)
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE_FAILSAFE@

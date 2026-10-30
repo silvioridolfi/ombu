@@ -1,0 +1,7 @@
+#!/bin/sh
+# Lanza el instalador de Ombú con permisos de administrador (solo en sesión live).
+if ! grep -qw 'boot=live' /proc/cmdline; then
+    zenity --error --title="Ombú" --text="El instalador solo funciona desde el USB o DVD de Ombú." 2>/dev/null
+    exit 1
+fi
+exec sudo -E env QT_QPA_PLATFORM=xcb calamares

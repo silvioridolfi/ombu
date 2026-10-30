@@ -1,0 +1,11 @@
+*.iso
+*.deb
+build.log
+build-*.log
+chroot/
+binary/
+cache/
+.build/
+out/
+salida/
+__pycache__/
