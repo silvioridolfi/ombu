@@ -1,0 +1,83 @@
+#!/bin/sh
+# Ombú — perfil visual del escritorio.
+#   base      equipos modestos (por ejemplo, netbooks G4): sin sombras ni transparencias.
+#   completo  equipos con memoria y video suficientes: sombras, bordes redondeados, transparencia suave.
+# Cómo se elige (de mayor a menor prioridad):
+#   1. parámetro de arranque  ombu.perfil=base|completo|auto
+#   2. archivo del usuario    ~/.config/ombu/perfil          (lo escribe el comando ombu-perfil)
+#   3. configuración global   OMBU_PERFIL en /etc/ombu/ombu.conf
+#   4. automático: "completo" si hay al menos 3 GB de RAM, video con aceleración y no es Intel GMA 3600/3650.
+# Uso:  /usr/lib/ombu/perfil            aplica el perfil
+#       /usr/lib/ombu/perfil --mostrar  muestra qué perfil corresponde y por qué
+
+pedido() {
+    for p in $(cat /proc/cmdline 2>/dev/null); do
+        case "$p" in ombu.perfil=*) echo "${p#ombu.perfil=}"; return ;; esac
+    done
+    if [ -r "$HOME/.config/ombu/perfil" ]; then
+        head -n1 "$HOME/.config/ombu/perfil"; return
+    fi
+    if [ -r /etc/ombu/ombu.conf ]; then
+        v="$(sed -n 's/^OMBU_PERFIL=//p' /etc/ombu/ombu.conf | tail -n1)"
+        [ -n "$v" ] && { echo "$v"; return; }
+    fi
+    echo auto
+}
+
+automatico() {   # imprime "perfil motivo"
+    ram_kb="$(awk '/^MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null)"
+    ram_mb=$(( ${ram_kb:-0} / 1024 ))
+    if [ "$ram_mb" -lt 2900 ]; then echo "base memoria baja (${ram_mb} MB)"; return; fi
+    if grep -qw nomodeset /proc/cmdline 2>/dev/null; then echo "base video sin aceleración (nomodeset)"; return; fi
+    for d in /sys/bus/pci/devices/*; do
+        [ "$(cat "$d/vendor" 2>/dev/null)" = "0x8086" ] || continue
+        case "$(cat "$d/device" 2>/dev/null)" in
+            0x0be[0-9a-f]|0x8108|0x8109|0x410[0-9a-f]) echo "base video Intel GMA (sin aceleración)"; return ;;
+        esac
+    done
+    if [ ! -e /dev/dri/card0 ]; then echo "base sin video acelerado (/dev/dri)"; return; fi
+    echo "completo memoria ${ram_mb} MB y video acelerado"
+}
+
+ARG="$1"
+PEDIDO="$(pedido)"
+case "$PEDIDO" in
+    base|completo) PERFIL="$PEDIDO"; MOTIVO="elegido por el usuario o el administrador" ;;
+    *) RES="$(automatico)"; PERFIL="${RES%% *}"; MOTIVO="${RES#* }" ;;
+esac
+
+if [ "$ARG" = "--mostrar" ]; then
+    echo "Perfil visual: $PERFIL ($MOTIVO). Pedido: $PEDIDO"
+    exit 0
+fi
+
+command -v xfconf-query >/dev/null 2>&1 || exit 0
+
+x() {   # canal propiedad tipo valor
+    xfconf-query -c "$1" -p "$2" -n -t "$3" -s "$4" 2>/dev/null || xfconf-query -c "$1" -p "$2" -s "$4" 2>/dev/null
+}
+panel_alfa() {
+    xfconf-query -c xfce4-panel -p /panels/panel-1/background-rgba -n -a \
+        -t double -s 0.0627 -t double -s 0.0745 -t double -s 0.1098 -t double -s "$1" 2>/dev/null \
+    || xfconf-query -c xfce4-panel -p /panels/panel-1/background-rgba -a \
+        -t double -s 0.0627 -t double -s 0.0745 -t double -s 0.1098 -t double -s "$1" 2>/dev/null
+}
+
+if [ "$PERFIL" = "completo" ]; then
+    x xfwm4 /general/use_compositing bool true
+    x xfwm4 /general/show_frame_shadow bool true
+    x xfwm4 /general/show_popup_shadow bool true
+    x xfwm4 /general/shadow_opacity int 55
+    x xsettings /Gtk/EnableAnimations bool true
+    panel_alfa 0.88
+else
+    x xfwm4 /general/use_compositing bool false
+    x xfwm4 /general/show_frame_shadow bool false
+    x xfwm4 /general/show_popup_shadow bool false
+    x xsettings /Gtk/EnableAnimations bool false
+    panel_alfa 0.97
+fi
+
+mkdir -p "$HOME/.cache"
+echo "$PERFIL ($MOTIVO)" > "$HOME/.cache/ombu-perfil-aplicado"
+exit 0

@@ -1,29 +1,62 @@
-# Ombú 1.1
+# Ombú 1.5 — Libre, simple y nuestro
 
-Sistema operativo libre para las escuelas bonaerenses — DTE Región 1.
+Sistema operativo libre pensado para las netbooks de las escuelas de Región 1. Es una iniciativa del equipo territorial de la DTE Región 1: una propuesta de tecnología educativa para enseñar, aprender y crear con lo que ya tenemos.
+
 Base: Debian 13 "trixie" · Escritorio: XFCE · Instalador: Calamares · Sin telemetría.
 
-> Primera versión pensada para las netbooks **G5/G6** (Coradir EF10MI2 / EF10MIX). Las G4 quedan para más adelante.
+- Sitio: <https://v0-ombudte.vercel.app>
+- Guía de instalación: <https://v0-ombudte.vercel.app/guia>
+- Descarga (ISO 1.5, versión de prueba): <https://github.com/silvioridolfi/ombu/releases/tag/v1.5>
+
+> Es una versión de prueba. Seguimos haciendo pruebas de compatibilidad en distintos modelos de netbooks escolares para llegar a la mayor cantidad posible.
 
 ## Qué incluye
 
 | Área | Software |
 |---|---|
-| Programación | TurboWarp Desktop (compatible con Scratch 3, funciona sin internet), Scratch y Pilas Bloques en línea, KTurtle |
-| Primaria | GCompris, Tux Paint, Tux Math, Tux Typing, KTouch, KLettres, KHangMan, KGeography, KolourPaint |
-| Ofimática | LibreOffice (Writer, Calc, Impress, Draw, Math) en español, corrector ortográfico |
-| Audio / video | Audacity, Parole |
-| Internet | Firefox ESR con políticas del sistema (sin telemetría, marcadores educativos) |
+| Producción digital | LibreOffice (Writer, Calc, Impress) en español, con corrector ortográfico · Firefox ESR |
+| Pensamiento computacional y programación | TurboWarp (sin conexión) · KTurtle (sin conexión) · Scratch y Pilas Bloques (requieren Internet) |
+| Creatividad y producción multimedia | Tux Paint · KolourPaint · Audacity · Reproductor (Parole) · visor de imágenes |
+| Matemática y aprendizajes fundamentales | GCompris · Tux Math · KTouch · Tux Typing · KLettres · KHangMan · KGeography |
 | Sistema | NetworkManager, Bluetooth, impresión y escáner, zram, firmware Realtek / Atheros / Intel |
+
+La mayoría de los programas funcionan sin conexión. Scratch, Pilas Bloques y Firefox requieren Internet.
 
 ## Usuarios
 
+La netbook instalada queda con dos usuarios:
+
 | Usuario | Clave | Uso |
 |---|---|---|
-| `estudiante` | `estudiante` | Sesión automática. Sin permisos de administrador. |
-| el que se crea en el instalador (sugerido: `soporte`) | la que elija el instalador | Administrador (sudo). Para entrar, cerrar la sesión de `estudiante`. |
+| `estudiante` | `estudiante` | Inicia sola al encender. Sin permisos de administrador. |
+| el que se crea en el instalador (sugerido: `soporte`) | la que se elija en el instalador | Cuenta técnica con permisos de administrador. Para usarla, cerrar la sesión de `estudiante`. |
 
 En la sesión de prueba (live, sin instalar) el usuario es `user` (clave `live`) con permisos de administrador; ahí `estudiante` todavía no existe: se crea durante la instalación.
+
+Una edición Personal, en la que cada persona elige su propio usuario y contraseña, está prevista para más adelante.
+
+## Probar e instalar
+
+Paso a paso en la [guía](https://v0-ombudte.vercel.app/guia). En resumen:
+
+1. Descargar la ISO y verificar su suma SHA-256 (figura en la página del release).
+2. Grabarla en un pendrive de 4 GB o más con Rufus (modo **Imagen DD**) o balenaEtcher.
+3. Arrancar la netbook desde USB (el menú de arranque suele abrirse con `F12`, `F11`, `F2` o `Esc`; en las G4 y G5 es `F11`).
+4. Probar la sesión live. Para instalar: ícono **Instalar Ombú** del escritorio.
+5. **El instalador reemplaza todo el contenido del disco elegido** (instalación solo Ombú, sin doble arranque). Guardar antes lo que se quiera conservar.
+6. En la pantalla **Teclado** verificar la distribución (en las netbooks suele ser *Spanish (Latin American)*).
+
+Requisitos: equipo de 64 bits (x86-64) con UEFI de 64 bits o BIOS clásico. Algunas netbooks necesitan desactivar Secure Boot desde la configuración del equipo (UEFI).
+
+## Pruebas de compatibilidad
+
+En cada netbook (sesión en vivo o instalada) abrir una terminal y ejecutar:
+
+```bash
+ombu-diagnostico
+```
+
+Genera un informe `.txt` en la carpeta personal con los datos del equipo (modelo, BIOS/UEFI, CPU, memoria, Wi-Fi, audio, cámara, batería, firmware faltante) y una lista para completar a mano. Un informe por modelo ayuda a armar la lista de compatibilidad.
 
 ## Cómo construir la ISO (Windows 11 + WSL2)
 
@@ -32,13 +65,13 @@ En la sesión de prueba (live, sin instalar) el usuario es `user` (clave `live`)
    wsl --install -d Debian
    ```
    Reiniciar si lo pide y crear usuario y clave de Debian.
-2. Descomprimir este proyecto en `C:\ombu` (o donde quieras).
+2. Clonar o descomprimir este proyecto en `C:\ombu` (o donde quieras).
 3. En la terminal de Debian:
    ```bash
    cd /mnt/c/ombu
    bash build-ombu.sh
    ```
-   Hace todo solo: instala herramientas, baja TurboWarp, construye la ISO y la copia a la carpeta **Descargas** de Windows como `ombu-1.1-amd64.iso`.
+   Hace todo solo: instala herramientas, baja TurboWarp, construye la ISO y la copia a la carpeta **Descargas** de Windows como `ombu-1.5-amd64.iso`.
    Tarda entre 30 y 90 minutos y necesita unos 20 GB libres.
 
 Si la descarga de TurboWarp falla, bajar a mano `TurboWarp-linux-amd64-X.Y.Z.deb` desde
@@ -48,23 +81,10 @@ Si la descarga de TurboWarp falla, bajar a mano `TurboWarp-linux-amd64-X.Y.Z.deb
 OMBU_TW_DEB=/ruta/al/archivo.deb bash build-ombu.sh
 ```
 
-## Probar y instalar
+### Wi-Fi de las escuelas
 
-1. Grabar la ISO en un pendrive con Rufus o balenaEtcher.
-2. En la netbook, arrancar desde USB (en las netbooks G4 y G5 se abre el menú de arranque con `F11`; las G5 usan UEFI con Secure Boot desactivado, las G4 arrancan en modo BIOS clásico / Legacy).
-3. Probar la sesión live. Para instalar: ícono **Instalar Ombú** del escritorio.
-4. El instalador borra el disco elegido (instalación solo Ombú, sin doble arranque).
-5. En la pantalla **Teclado** verificar el layout (en las netbooks suele ser *Spanish (Latin American)*). Lo que se elija ahí queda en el sistema instalado.
-
-## Pruebas por modelo
-
-En cada netbook (sesión en vivo o instalada) abrir una terminal y ejecutar:
-
-```bash
-ombu-diagnostico
-```
-
-Genera un informe `.txt` en la carpeta personal con los datos del equipo (modelo, BIOS/UEFI, CPU, memoria, Wi-Fi, audio, cámara, batería, firmware faltante) y una lista para completar a mano. Un informe por modelo arma la lista de compatibilidad.
+La ISO publicada trae configurado el Wi-Fi de las escuelas. Por seguridad, el archivo con la contraseña **no está en este repositorio** (`Estudiantes.nmconnection` figura en `.gitignore`). Para incluirlo al construir, copiar `docs/Estudiantes.nmconnection.example` a
+`config/includes.chroot/etc/NetworkManager/system-connections/Estudiantes.nmconnection` y completar la contraseña. Si el archivo no está, la ISO se construye igual, sin esa red.
 
 ## Estructura del proyecto
 
@@ -77,6 +97,7 @@ config/includes.chroot/         archivos que se copian al sistema (instalador, t
 bootloader-overrides/           menú de arranque (BIOS y UEFI)
 assets/                         logos, tipografía Encode Sans (OFL), imágenes generadas
 tools/gen-assets.py             regenera toda la identidad visual
+docs/                           plantillas (Wi-Fi)
 ```
 
 ## Identidad visual
@@ -85,11 +106,6 @@ Paleta DTE: rosa `#E52277`, magenta `#AA317A`, azul acero `#3A769B`, turquesa `#
 Tipografía: Encode Sans (licencia OFL, incluida en `assets/fonts`).
 Para regenerar las imágenes: `python3 tools/gen-assets.py` (requiere Pillow, numpy y rsvg-convert).
 
-## Créditos
-
-Creado por **Silvio Ridolfi** y el **equipo territorial de Región 1** — DTE | Dirección de Tecnología Educativa, Provincia de Buenos Aires.
-Se muestra en el instalador (última diapositiva), en *Acerca de Ombú* (menú de aplicaciones) y en `/usr/share/ombu/CREDITOS.txt`.
-
 ## Privacidad
 
 - Sin `popularity-contest`, sin reportes automáticos, sin actualizaciones automáticas.
@@ -97,22 +113,25 @@ Se muestra en el instalador (última diapositiva), en *Acerca de Ombú* (menú d
 - NetworkManager: sin verificación de conectividad contra servidores externos.
 - El instalador no consulta geolocalización por IP.
 
-## Limitaciones conocidas
+## A tener en cuenta
 
-- Probar siempre en una G5 real antes de distribuir: hay modelos con Wi-Fi o audio que pueden necesitar firmware adicional.
-- Scratch oficial no tiene versión de escritorio para Linux: se usa TurboWarp (offline) y Scratch en línea.
-- Si alguna netbook tiene firmware UEFI de 32 bits, esta ISO no arranca en ella (hay que generar una variante `ia32`).
+- Seguimos sumando compatibilidad de Wi-Fi y audio para más modelos; algunos pueden necesitar firmware adicional.
+- Scratch oficial no tiene versión de escritorio para Linux: se usa TurboWarp (sin conexión) y Scratch en línea.
+- Esta ISO es para equipos de 64 bits; con UEFI de 32 bits haría falta una variante `ia32`.
+- La accesibilidad (lector de pantalla, teclado en pantalla) está pendiente de evaluar.
 
-## Licencias
+## Contribuir
 
-Código y configuración: GPL-3.0-or-later. Arte propio y documentación: CC BY-SA 4.0. Los logos e identidad institucional de la DTE, la Dirección General de Cultura y Educación y el Gobierno de la Provincia de Buenos Aires son de sus titulares, con todos los derechos reservados. Detalle en [`LICENSES/README.md`](LICENSES/README.md).
+Probá Ombú en una netbook de tu escuela y contanos cómo te fue: abrí un mensaje en [Issues](https://github.com/silvioridolfi/ombu/issues) o comentáselo a tu referente de tecnología educativa o al equipo territorial de Región 1.
 
-## Descargar y probar
+## Créditos
 
-La ISO se publica en [Releases](../../releases). Verificá la descarga con el archivo `.sha256`:
+Equipo territorial de la **DTE | Dirección de Tecnología Educativa — Región 1** (Berisso, Brandsen, Ensenada, La Plata, Magdalena y Punta Indio):
 
-```bash
-sha256sum -c ombu-1.1-amd64.iso.sha256
-```
+Andrés Guzmán (FED) · Carlos Franco (FED) · Daniela Cortés (FED) · Jorge Pérez (FED) · Julio Machado (CED) · Macarena Duarte Buschiazzo (FED) · Marcos Pettiná (FED) · Silvio Ridolfi (FED)
 
-Para reportar problemas, abrí un *Issue* e incluí el informe de `ombu-diagnostico`.
+FED: Facilitador/a de Educación Digital · CED: Coordinador de Educación Digital
+
+© 2026 Dirección de Tecnología Educativa (DTE), Región 1 · Desarrollado por Silvio Ridolfi, Facilitador de Educación Digital.
+
+Los créditos se muestran en el instalador (última diapositiva), en *Acerca de Ombú* (menú de aplicaciones) y en `/usr/share/ombu/CREDITOS.txt`. La lista del equipo está en `config/includes.chroot/usr/share/ombu/equipo.txt`.

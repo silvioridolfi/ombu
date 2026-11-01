@@ -1,0 +1,26 @@
+[Icon Theme]
+Name=Ombú
+Comment=Íconos de Ombú (cuadrados redondeados)
+Inherits=Papirus,hicolor
+Directories=scalable/apps,scalable/places,scalable/devices
+
+[scalable/apps]
+Size=64
+MinSize=16
+MaxSize=512
+Type=Scalable
+Context=Applications
+
+[scalable/places]
+Size=64
+MinSize=16
+MaxSize=512
+Type=Scalable
+Context=Places
+
+[scalable/devices]
+Size=64
+MinSize=16
+MaxSize=512
+Type=Scalable
+Context=Devices

@@ -11,6 +11,18 @@ label live-@FLAVOUR@-video
 	initrd @INITRD@
 	append @APPEND_LIVE@ nomodeset
 
+label live-@FLAVOUR@-nomux
+	menu label Ombu (prueba touchpad: i8042.^nomux)
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE@ i8042.nomux
+
+label live-@FLAVOUR@-reset
+	menu label Ombu (prueba touchpad: i8042.^reset)
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE@ i8042.reset
+
 label live-@FLAVOUR@-failsafe
 	menu label Ombu (modo a prueba de ^fallos)
 	linux @LINUX@

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Se ejecuta al iniciar sesión (XFCE). Prepara el escritorio del usuario.
 DESK="$(xdg-user-dir DESKTOP 2>/dev/null)"
-[ -n "$DESK" ] || DESK="$HOME/Desktop"
+[ -n "$DESK" ] || DESK="$HOME/Escritorio"
 mkdir -p "$DESK"
 
 # En sesión live: ícono para instalar Ombú
@@ -23,7 +23,8 @@ done
 
 # Fondo de pantalla: se fija para cada monitor conectado (los nombres varían: LVDS-1, eDP-1, Virtual-1...)
 IMG=/usr/share/ombu/wallpapers/ombu.png
-if command -v xfconf-query >/dev/null 2>&1; then
+fijar_fondo() {
+    command -v xfconf-query >/dev/null 2>&1 || return 0
     OUTPUTS="$(xrandr --query 2>/dev/null | awk '/ connected/{print $1}')"
     [ -n "$OUTPUTS" ] || OUTPUTS="default"
     for o in $OUTPUTS; do
@@ -36,5 +37,14 @@ if command -v xfconf-query >/dev/null 2>&1; then
     for p in $(xfconf-query -c xfce4-desktop -l 2>/dev/null | grep 'last-image$'); do
         xfconf-query -c xfce4-desktop -p "$p" -s "$IMG" 2>/dev/null
     done
-fi
+    # Si xfdesktop arrancó antes de que se fijara el fondo, que vuelva a leer la configuración
+    command -v xfdesktop >/dev/null 2>&1 && xfdesktop --reload >/dev/null 2>&1
+}
+fijar_fondo
+# xfdesktop a veces escribe su fondo por defecto después de este script (carrera al iniciar la sesión):
+# se vuelve a fijar unos segundos más tarde, en segundo plano.
+( sleep 6; fijar_fondo; sleep 10; fijar_fondo ) >/dev/null 2>&1 &
+
+# Perfil visual (base o completo, según el equipo): ver /usr/lib/ombu/perfil
+[ -x /usr/lib/ombu/perfil ] && /usr/lib/ombu/perfil
 exit 0

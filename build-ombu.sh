@@ -51,8 +51,12 @@ chmod +x auto/* config/hooks/live/*.hook.chroot \
     config/includes.chroot/usr/bin/ombu-acerca \
     config/includes.chroot/usr/bin/ombu-diagnostico \
     config/includes.chroot/usr/bin/ombu-turbowarp \
+    config/includes.chroot/usr/bin/ombu-perfil \
     config/includes.chroot/usr/bin/ombu-instalar \
     config/includes.chroot/usr/lib/ombu/* 2>/dev/null || true
+# Identificador de compilación (se muestra en "Acerca de Ombú" y en ombu-diagnostico)
+mkdir -p config/includes.chroot/etc/ombu
+date '+%Y%m%d-%H%M' > config/includes.chroot/etc/ombu/build
 # Limpia restos de un build anterior (solo si existen)
 $SUDO lb clean --purge >/dev/null 2>&1 || true
 
@@ -112,8 +116,8 @@ if [ -z "$OUT" ]; then
 fi
 [ -n "$OUT" ] || OUT="$WORK/out"
 mkdir -p "$OUT"
-cp -f "$ISO" "$OUT/ombu-1.1-amd64.iso"
-( cd "$OUT" && sha256sum ombu-1.1-amd64.iso | tee ombu-1.1-amd64.iso.sha256 )
+cp -f "$ISO" "$OUT/ombu-1.5-amd64.iso"
+( cd "$OUT" && sha256sum ombu-1.5-amd64.iso | tee ombu-1.5-amd64.iso.sha256 )
 
-say "Listo. ISO en: $OUT/ombu-1.1-amd64.iso"
+say "Listo. ISO en: $OUT/ombu-1.5-amd64.iso"
 echo "Siguiente paso: grabarla en un pendrive con Rufus (modo DD o ISO) o balenaEtcher."

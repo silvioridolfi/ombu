@@ -110,6 +110,16 @@ def draw_text(img, xy, txt, f, fill=WHITE, anchor="la"):
     ImageDraw.Draw(img).text(xy, txt, font=f, fill=fill, anchor=anchor)
 
 
+def poner_palabra(out, ic, f, x, fill):
+    """Escribe 'Ombú' con la altura de las mayúsculas centrada en la altura total del árbol (sin el margen vacío del ícono)."""
+    caja = ic.getbbox() or (0, 0, ic.width, ic.height)
+    centro_arbol = (caja[1] + caja[3]) / 2
+    d = ImageDraw.Draw(out)
+    _, tope, _, base = d.textbbox((0, 0), "O", font=f, anchor="ls")     # tope < 0 (arriba de la línea base)
+    linea_base = int(round(centro_arbol - (tope + base) / 2))
+    d.text((x, linea_base), "Ombú", font=f, fill=fill, anchor="ls")
+
+
 def lockup_white(height=220):
     """Ícono + 'Ombú' en blanco (transparente)."""
     ic = icon_white(height)
@@ -119,7 +129,7 @@ def lockup_white(height=220):
     gap = int(height * 0.08)
     out = Image.new("RGBA", (height + gap + w + 8, height), (0, 0, 0, 0))
     out.alpha_composite(ic, (0, 0))
-    ImageDraw.Draw(out).text((height + gap, int(height * 0.60)), "Ombú", font=f, fill=WHITE, anchor="ls")
+    poner_palabra(out, ic, f, height + gap, WHITE)
     return out
 
 
@@ -131,7 +141,7 @@ def lockup_color(height=220):
     gap = int(height * 0.08)
     out = Image.new("RGBA", (height + gap + w + 8, height), (0, 0, 0, 0))
     out.alpha_composite(ic, (0, 0))
-    ImageDraw.Draw(out).text((height + gap, int(height * 0.60)), "Ombú", font=f, fill=NAVY, anchor="ls")
+    poner_palabra(out, ic, f, height + gap, NAVY)
     return out
 
 
@@ -205,6 +215,24 @@ def rounded(img, radius):
     return out
 
 
+def slide_creditos():
+    """Última diapositiva del instalador: todo el equipo (lista en usr/share/ombu/equipo.txt)."""
+    ruta = os.path.join(ROOT, "config", "includes.chroot", "usr", "share", "ombu", "equipo.txt")
+    equipo = [l.strip() for l in open(ruta, encoding="utf-8") if l.strip()]
+    mitad = (len(equipo) + 1) // 2
+    im = gradient(560, 300)
+    d = ImageDraw.Draw(im)
+    d.text((28, 20), "Hecho en el territorio", font=font(32, 800), fill=WHITE)
+    d.text((28, 66), "Equipo de la DTE, Región 1", font=font(17, 500), fill=(255, 255, 255, 210))
+    for i, nombre in enumerate(equipo):
+        col, fila = divmod(i, mitad)
+        d.text((28 + col * 250, 98 + fila * 27), nombre, font=font(16, 500), fill=(255, 255, 255, 245))
+    d.text((28, 226), "DTE | Dirección de Tecnología Educativa - Región 1", font=font(15, 500), fill=(255, 255, 255, 235))
+    d.text((28, 248), "La Plata - Provincia de Buenos Aires", font=font(15, 500), fill=(255, 255, 255, 235))
+    d.text((28, 270), "© 2026", font=font(15, 500), fill=(255, 255, 255, 235))
+    save(rounded(im, 22), "calamares", "slide4.png")
+
+
 def main():
     print("Ícono y logo")
     save(icon_white(512), "ombu-icon-white.png")
@@ -213,8 +241,13 @@ def main():
     save(lockup_color(240), "ombu-logo-color.png")
 
     print("Escritorio y login")
-    save(build_wallpaper(1920, 1080), "wallpaper-1920x1080.png", mode="RGB")
-    save(build_login(1920, 1080), "login-1920x1080.png", mode="RGB")
+    fondo = os.path.join(ROOT, "assets", "wallpapers", "ombu-poliedros-oscuro.png")
+    if os.path.exists(fondo):   # fondo elegido (poliedros + logos DTE 2026); se usa también en el inicio de sesión
+        save(Image.open(fondo).convert("RGB"), "wallpaper-1920x1080.png", mode="RGB")
+        save(Image.open(fondo).convert("RGB"), "login-1920x1080.png", mode="RGB")
+    else:
+        save(build_wallpaper(1920, 1080), "wallpaper-1920x1080.png", mode="RGB")
+        save(build_login(1920, 1080), "login-1920x1080.png", mode="RGB")
 
     print("Plymouth (pantalla de arranque)")
     save(gradient(1366, 768), "plymouth", "bg.png", mode="RGB")
@@ -224,7 +257,7 @@ def main():
     f = font(76, 800)
     ImageDraw.Draw(ply).text((280, 290), "Ombú", font=f, fill=WHITE, anchor="ms")
     save(ply, "plymouth", "logo.png")
-    save(dte_white(520), "plymouth", "dte.png")
+    save(dte_white(900), "plymouth", "dte.png")
     bar_bg = Image.new("RGBA", (400, 10), (0, 0, 0, 0))
     ImageDraw.Draw(bar_bg).rounded_rectangle((0, 0, 399, 9), radius=5, fill=(255, 255, 255, 70))
     save(bar_bg, "plymouth", "bar-bg.png")
@@ -298,10 +331,7 @@ def main():
            "Es software libre pensado desde el",
            "territorio para las escuelas de la provincia."], "slide3.png")
 
-    slide(("Hecho en el", "territorio"),
-          ["Creado por Silvio Ridolfi y el equipo",
-           "territorial de Región 1.",
-           "DTE | Dirección de Tecnología Educativa."], "slide4.png", show_icon=False)
+    slide_creditos()
 
     # Ícono del lanzador "Instalar Ombú"
     ins = gradient(256, 256)

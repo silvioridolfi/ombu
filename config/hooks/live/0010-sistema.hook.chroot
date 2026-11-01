@@ -25,10 +25,10 @@ cat > /etc/hosts <<EOT
 ::1         localhost ip6-localhost ip6-loopback
 EOT
 cat > /etc/os-release <<EOT
-PRETTY_NAME="Ombú 1.1 (basado en Debian 13)"
+PRETTY_NAME="Ombú 1.5 (basado en Debian 13)"
 NAME="Ombú"
-VERSION_ID="1.1"
-VERSION="1.1"
+VERSION_ID="1.5"
+VERSION="1.5"
 VERSION_CODENAME=trixie
 ID=ombu
 ID_LIKE=debian
@@ -36,30 +36,40 @@ HOME_URL="https://abc.gob.ar"
 SUPPORT_URL="https://abc.gob.ar"
 BUG_REPORT_URL="https://abc.gob.ar"
 EOT
-printf 'Ombú 1.1 \\n \\l\n\n' > /etc/issue
-printf 'Ombú 1.1\n' > /etc/issue.net
+printf 'Ombú 1.5 \\n \\l\n\n' > /etc/issue
+printf 'Ombú 1.5\n' > /etc/issue.net
 : > /etc/motd
 
 # ---------- Tipografías ----------
 fc-cache -f
 
 # ---------- Lanzadores del escritorio para el usuario estudiante ----------
-mkdir -p /etc/skel/Desktop
+rmdir /etc/skel/Desktop 2>/dev/null || true
+mkdir -p /etc/skel/Escritorio
 for app in firefox-esr scratch-web pilas-bloques org.kde.gcompris tuxpaint tuxmath libreoffice-writer libreoffice-calc audacity org.kde.ktouch; do
     f="/usr/share/applications/$app.desktop"
-    [ -f "$f" ] && cp "$f" /etc/skel/Desktop/ || echo "AVISO: falta $f"
+    [ -f "$f" ] && cp "$f" /etc/skel/Escritorio/ || echo "AVISO: falta $f"
 done
 # TurboWarp (el nombre del .desktop depende del paquete)
 tw="$(grep -il 'turbowarp' /usr/share/applications/*.desktop 2>/dev/null | head -n1 || true)"
-[ -n "$tw" ] && cp "$tw" /etc/skel/Desktop/ || echo "AVISO: TurboWarp no está instalado"
+[ -n "$tw" ] && cp "$tw" /etc/skel/Escritorio/ || echo "AVISO: TurboWarp no está instalado"
 # Lanzador propio (WebGL por software en equipos sin aceleración gráfica)
-for f in $tw /etc/skel/Desktop/"$(basename "$tw" 2>/dev/null)"; do
+for f in $tw /etc/skel/Escritorio/"$(basename "$tw" 2>/dev/null)"; do
     [ -f "$f" ] && sed -i 's|^Exec=[^ ]*|Exec=/usr/bin/ombu-turbowarp|' "$f"
 done
-chmod +x /etc/skel/Desktop/*.desktop 2>/dev/null || true
+# Nombres cortos para que se lean completos bajo el ícono
+for par in libreoffice-writer:Writer libreoffice-calc:Calc libreoffice-impress:Impress; do
+    f="/etc/skel/Escritorio/${par%%:*}.desktop"
+    [ -f "$f" ] && sed -i -e '/^Name\[/d' -e "s/^Name=.*/Name=${par##*:}/" "$f"
+done
+chmod +x /etc/skel/Escritorio/*.desktop 2>/dev/null || true
 
 # (El usuario estudiante se crea al instalar: ver /usr/lib/ombu/post-install.sh.
 #  Si existiera en la imagen live, user-setup no crearía el usuario de la sesión de prueba.)
+
+# ---------- Wi-Fi escolar "Estudiantes" (NetworkManager exige permisos 600 de root) ----------
+chown root:root /etc/NetworkManager/system-connections/Estudiantes.nmconnection 2>/dev/null || true
+chmod 600 /etc/NetworkManager/system-connections/Estudiantes.nmconnection 2>/dev/null || true
 
 # ---------- Firefox: políticas (sin telemetría) ----------
 # Firefox lee /etc/firefox/policies/policies.json; se deja también junto al binario
@@ -80,6 +90,7 @@ echo /usr/sbin/lightdm > /etc/X11/default-display-manager
 systemctl enable lightdm.service 2>/dev/null || true
 plymouth-set-default-theme ombu
 gtk-update-icon-cache -f /usr/share/icons/Papirus 2>/dev/null || true
+gtk-update-icon-cache -f /usr/share/icons/Ombu 2>/dev/null || true
 update-initramfs -u -k all
 
 # ---------- Limpieza ----------

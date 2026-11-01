@@ -25,6 +25,6 @@ lb config noauto \
   --iso-volume "OMBU" \
   --image-name "ombu" \
   --checksums sha256 \
-  --bootappend-live "boot=live components quiet splash locales=es_AR.UTF-8 keyboard-layouts=latam timezone=America/Argentina/Buenos_Aires hostname=ombu username=user user-fullname=Ombu" \
-  --bootappend-live-failsafe "boot=live components memtest=none nomodeset locales=es_AR.UTF-8 keyboard-layouts=latam timezone=America/Argentina/Buenos_Aires hostname=ombu username=user user-fullname=Ombu" \
+  --bootappend-live "boot=live components quiet splash locales=es_AR.UTF-8 keyboard-layouts=latam timezone=America/Argentina/Buenos_Aires hostname=ombu username=user user-fullname=Ombú" \
+  --bootappend-live-failsafe "boot=live components memtest=none nomodeset locales=es_AR.UTF-8 keyboard-layouts=latam timezone=America/Argentina/Buenos_Aires hostname=ombu username=user user-fullname=Ombú" \
   "${@}"

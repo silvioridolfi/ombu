@@ -1,8 +1,21 @@
 Ombú — Sistema operativo libre para las escuelas bonaerenses
 
-Creado por Silvio Ridolfi y el equipo territorial de Región 1.
-DTE | Dirección de Tecnología Educativa
+Equipo de la Dirección de Tecnología Educativa — Región 1:
+
+  Andrés Guzmán (FED)
+  Carlos Franco (FED)
+  Daniela Cortés (FED)
+  Jorge Pérez (FED)
+  Julio Machado (CED)
+  Macarena Duarte Buschiazzo (FED)
+  Marcos Pettiná (FED)
+  Silvio Ridolfi (FED)
+
+DTE | Dirección de Tecnología Educativa - Región 1
+La Plata - Provincia de Buenos Aires
 Dirección General de Cultura y Educación — Provincia de Buenos Aires
+
+© 2026
 
 Ombú está construido sobre software libre: Debian GNU/Linux, XFCE,
 Calamares, LibreOffice, Firefox, GCompris, Tux Paint, TurboWarp y el

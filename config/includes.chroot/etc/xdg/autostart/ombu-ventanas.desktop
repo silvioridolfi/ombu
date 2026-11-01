@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Ventanas de Ombú
+Comment=Abre las ventanas maximizadas
+Exec=devilspie2 --folder /usr/share/ombu/devilspie2
+OnlyShowIn=XFCE;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

@@ -8,5 +8,6 @@
     <property name="dpms-on-ac-off" type="uint" value="45"/>
     <property name="lid-action-on-battery" type="uint" value="1"/>
     <property name="lid-action-on-ac" type="uint" value="1"/>
+    <property name="power-button-action" type="uint" value="3"/>
   </property>
 </channel>

@@ -1,5 +1,7 @@
 # --- Sistema base ---
 user-setup
+xinput
+libinput-tools
 iproute2
 live-tools
 systemd-sysv

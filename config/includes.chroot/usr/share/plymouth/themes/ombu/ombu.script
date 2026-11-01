@@ -18,10 +18,14 @@ logo.SetX(sw / 2 - logo_image.GetWidth() / 2);
 logo.SetY(sh / 2 - logo_image.GetHeight() / 2 - 40);
 logo.SetZ(10);
 
-dte_image = Image("dte.png");
+# Logos institucionales: ocupan ~58% del ancho de la pantalla (antes ~38%).
+dte_src = Image("dte.png");
+dte_w = Math.Int(sw * 0.58);
+dte_h = Math.Int(dte_src.GetHeight() * dte_w / dte_src.GetWidth());
+dte_image = dte_src.Scale(dte_w, dte_h);
 dte = Sprite(dte_image);
-dte.SetX(sw / 2 - dte_image.GetWidth() / 2);
-dte.SetY(sh - dte_image.GetHeight() - 30);
+dte.SetX(sw / 2 - dte_w / 2);
+dte.SetY(sh - dte_h - 30);
 dte.SetZ(10);
 
 bar_bg_image = Image("bar-bg.png");

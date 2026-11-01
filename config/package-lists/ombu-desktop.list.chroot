@@ -23,6 +23,9 @@ xfce4-screenshooter
 xfce4-taskmanager
 xfwm4
 xfdesktop4
+devilspie2
+python3-gi
+gir1.2-gtk-3.0
 thunar
 thunar-archive-plugin
 xarchiver

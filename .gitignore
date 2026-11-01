@@ -9,3 +9,6 @@ cache/
 out/
 salida/
 __pycache__/
+
+# Wi-Fi escolar con contraseña: no se publica (ver docs/)
+config/includes.chroot/etc/NetworkManager/system-connections/Estudiantes.nmconnection

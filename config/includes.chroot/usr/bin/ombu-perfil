@@ -1,0 +1,18 @@
+#!/bin/sh
+# Ombú — elegir el perfil visual del escritorio.
+#   ombu-perfil              muestra el perfil actual y por qué
+#   ombu-perfil auto         elige según la memoria y el video del equipo (valor por defecto)
+#   ombu-perfil base         sin sombras ni transparencias (equipos modestos)
+#   ombu-perfil completo     sombras, bordes redondeados y transparencia suave
+case "$1" in
+    "")
+        exec /usr/lib/ombu/perfil --mostrar ;;
+    auto|base|completo)
+        mkdir -p "$HOME/.config/ombu"
+        echo "$1" > "$HOME/.config/ombu/perfil"
+        /usr/lib/ombu/perfil
+        /usr/lib/ombu/perfil --mostrar ;;
+    *)
+        echo "Uso: ombu-perfil [auto|base|completo]" >&2
+        exit 1 ;;
+esac

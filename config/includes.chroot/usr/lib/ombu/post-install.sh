@@ -48,6 +48,8 @@ if [ "$gma" = 1 ] && [ -f /etc/default/grub ]; then
     update-grub >/dev/null 2>&1 || true
 fi
 
+# El instalador no hace falta en el sistema instalado
+rm -f /usr/share/applications/ombu-instalar.desktop
 rm -f /etc/sudoers.d/live /etc/lightdm/lightdm.conf.d/*live* 2>/dev/null || true
 mkdir -p /etc/ombu
 date -u +%Y-%m-%dT%H:%M:%SZ > /etc/ombu/installed

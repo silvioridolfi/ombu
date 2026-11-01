@@ -1,8 +1,117 @@
-#!/bin/sh
-# Muestra la ventana "Acerca de Ombú"
-VERSION="1.1"
-[ -r /etc/ombu/version ] && VERSION="$(cat /etc/ombu/version)"
-exec zenity --info --no-wrap --width=460 \
-    --title="Acerca de Ombú" \
-    --icon="/usr/share/pixmaps/ombu-install.png" \
-    --text="<big><b>Ombú $VERSION</b></big>\nSistema operativo libre para las escuelas bonaerenses\n\nCreado por <b>Silvio Ridolfi</b> y el\n<b>equipo territorial de Región 1</b>\n\nDTE | Dirección de Tecnología Educativa\nProvincia de Buenos Aires\n\nBasado en Debian GNU/Linux · Sin telemetría"
+#!/usr/bin/python3
+# Ombú — ventana "Acerca de Ombú": logo centrado arriba y, debajo, la versión, el equipo y los créditos.
+import subprocess
+
+import gi
+gi.require_version("Gdk", "3.0")
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gdk, Gtk  # noqa: E402
+
+GRIS = "#6b7280"
+
+
+def leer(ruta, defecto=""):
+    try:
+        with open(ruta, encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return defecto
+
+
+def conf(clave, defecto=""):
+    for linea in leer("/etc/ombu/ombu.conf").splitlines():
+        if linea.startswith(clave + "="):
+            return linea.split("=", 1)[1].strip()
+    return defecto
+
+
+def perfil_visual():
+    try:
+        salida = subprocess.run(["/usr/lib/ombu/perfil", "--mostrar"], capture_output=True, text=True, timeout=5).stdout
+        return salida.split("Perfil visual:")[1].split()[0]
+    except (OSError, IndexError, subprocess.SubprocessError):
+        return ""
+
+
+def etiqueta(texto, markup=True):
+    et = Gtk.Label()
+    if markup:
+        et.set_markup(texto)
+    else:
+        et.set_text(texto)
+    et.set_justify(Gtk.Justification.CENTER)
+    et.set_line_wrap(True)
+    et.set_halign(Gtk.Align.CENTER)
+    return et
+
+
+def espacio(alto):
+    s = Gtk.Box()
+    s.set_size_request(-1, alto)
+    return s
+
+
+def esc(t):
+    return t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def main():
+    version = conf("OMBU_VERSION", "")
+    build = leer("/etc/ombu/build", "—")
+    perfil = perfil_visual()
+    equipo = [l.strip() for l in leer("/usr/share/ombu/equipo.txt").splitlines() if l.strip()]
+
+    css = Gtk.CssProvider()
+    css.load_from_data(b"window { background-color: #f4f6fa; } label { color: #1b1f2a; }")
+    Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+    ventana = Gtk.Window(title="Acerca de Ombú")
+    ventana.set_position(Gtk.WindowPosition.CENTER)
+    ventana.set_resizable(False)
+    ventana.set_border_width(0)
+    try:
+        ventana.set_icon_from_file("/usr/share/ombu/brand/ombu-panel.png")
+    except Exception:
+        pass
+    ventana.connect("destroy", Gtk.main_quit)
+
+    caja = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+    caja.set_border_width(32)
+    ventana.add(caja)
+
+    logo = Gtk.Image.new_from_file("/usr/share/ombu/brand/ombu-logo-acerca.png")
+    logo.set_halign(Gtk.Align.CENTER)
+    caja.pack_start(logo, False, False, 0)
+    caja.pack_start(espacio(22), False, False, 0)
+
+    caja.pack_start(etiqueta("<span size='x-large' weight='bold'>Versión %s</span>" % esc(version or "")), False, False, 0)
+    detalle = "Compilación %s" % esc(build)
+    if perfil:
+        detalle += "   ·   Perfil visual: %s" % esc(perfil)
+    caja.pack_start(etiqueta("<span size='small' foreground='%s'>%s</span>" % (GRIS, detalle)), False, False, 0)
+    caja.pack_start(espacio(6), False, False, 0)
+    caja.pack_start(etiqueta("Sistema operativo libre para las escuelas bonaerenses"), False, False, 0)
+    caja.pack_start(espacio(14), False, False, 0)
+
+    caja.pack_start(etiqueta("<b>Equipo de la DTE, Región 1</b>"), False, False, 0)
+    for i in range(0, len(equipo), 2):
+        caja.pack_start(etiqueta("   ·   ".join(esc(n) for n in equipo[i:i + 2]), markup=True), False, False, 0)
+    caja.pack_start(espacio(14), False, False, 0)
+
+    caja.pack_start(etiqueta("DTE | Dirección de Tecnología Educativa - Región 1\nLa Plata - Provincia de Buenos Aires"), False, False, 0)
+    caja.pack_start(espacio(10), False, False, 0)
+    caja.pack_start(etiqueta("<span size='small' foreground='%s'>© 2026   ·   Basado en Debian GNU/Linux   ·   Software libre   ·   Sin telemetría</span>" % GRIS), False, False, 0)
+    caja.pack_start(espacio(14), False, False, 0)
+
+    boton = Gtk.Button(label="Aceptar")
+    boton.set_halign(Gtk.Align.CENTER)
+    boton.set_size_request(120, -1)
+    boton.connect("clicked", lambda *_: ventana.destroy())
+    caja.pack_start(boton, False, False, 0)
+
+    ventana.show_all()
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main()

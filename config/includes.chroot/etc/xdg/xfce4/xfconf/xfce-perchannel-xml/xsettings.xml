@@ -2,7 +2,7 @@
 <channel name="xsettings" version="1.0">
   <property name="Net" type="empty">
     <property name="ThemeName" type="string" value="Greybird"/>
-    <property name="IconThemeName" type="string" value="Papirus"/>
+    <property name="IconThemeName" type="string" value="Ombu"/>
     <property name="EnableEventSounds" type="bool" value="false"/>
     <property name="EnableInputFeedbackSounds" type="bool" value="false"/>
   </property>
@@ -11,7 +11,7 @@
     <property name="MonospaceFontName" type="string" value="DejaVu Sans Mono 11"/>
     <property name="CursorThemeName" type="string" value="DMZ-White"/>
     <property name="CursorThemeSize" type="int" value="24"/>
-    <property name="DecorationLayout" type="string" value="menu:minimize,maximize,close"/>
+    <property name="DecorationLayout" type="string" value=":minimize,maximize,close"/>
   </property>
   <property name="Xft" type="empty">
     <property name="Antialias" type="int" value="1"/>

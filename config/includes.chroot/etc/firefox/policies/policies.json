@@ -10,6 +10,9 @@
     "OverridePostUpdatePage": "",
     "NoDefaultBookmarks": true,
     "DisableProfileImport": true,
+    "Extensions": {
+      "Locked": ["uBlock0@raymondhill.net"]
+    },
     "OfferToSaveLogins": false,
     "PasswordManagerEnabled": false,
     "DNSOverHTTPS": { "Enabled": false, "Locked": true },
