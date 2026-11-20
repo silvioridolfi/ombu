@@ -8,10 +8,10 @@ windowPlacement: center
 strings:
     productName:         Ombú
     shortProductName:    Ombú
-    version:             1.5
-    shortVersion:        1.5
-    versionedName:       Ombú 1.5
-    shortVersionedName:  Ombú 1.5
+    version:             1.6
+    shortVersion:        1.6
+    versionedName:       Ombú 1.6
+    shortVersionedName:  Ombú 1.6
     bootloaderEntryName: Ombu
     productUrl:          https://abc.gob.ar
     supportUrl:          https://abc.gob.ar

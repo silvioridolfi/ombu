@@ -41,11 +41,68 @@ for d in /sys/bus/pci/devices/*; do
         0x0be[0-9a-f]|0x8108|0x8109|0x410[0-9a-f]) gma=1 ;;
     esac
 done
-if [ "$gma" = 1 ] && [ -f /etc/default/grub ]; then
-    if ! grep -q 'nomodeset' /etc/default/grub; then
-        sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)"/\1 nomodeset"/' /etc/default/grub
-    fi
+if [ "$gma" = 1 ]; then
+    # /etc/default/grub.d/ombu.cfg se lee después de /etc/default/grub y pisa el valor:
+    # por eso el ajuste va en un archivo que se lee al final (zz-).
+    mkdir -p /etc/default/grub.d
+    cat > /etc/default/grub.d/zz-ombu-g4.cfg <<'EOT'
+# Ombú: video Intel GMA 3600/3650 (netbooks G4). Sin esto la pantalla queda negra.
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash nomodeset"
+EOT
     update-grub >/dev/null 2>&1 || true
+
+    # Puntero invisible después de suspender: cursor por software.
+    mkdir -p /etc/X11/xorg.conf.d
+    cat > /etc/X11/xorg.conf.d/20-ombu-gma500.conf <<'EOT'
+# Ombú: el puntero de hardware del chip Intel GMA 3600 desaparece después de suspender.
+Section "Device"
+    Identifier "Ombu-GMA"
+    Driver "modesetting"
+    Option "SWcursor" "true"
+EndSection
+EOT
+
+    # Colores raros al reanudar: redibujar la pantalla al despertar.
+    mkdir -p /usr/lib/systemd/system-sleep /usr/lib/ombu
+    cat > /usr/lib/systemd/system-sleep/ombu-reanudar <<'EOT'
+#!/bin/sh
+[ "$1" = "post" ] || exit 0
+systemd-run --no-block --collect --quiet --unit=ombu-reanudar-pantalla /usr/lib/ombu/reanudar-pantalla "$1" "$2" >/dev/null 2>&1
+exit 0
+EOT
+    cat > /usr/lib/ombu/reanudar-pantalla <<'EOT'
+#!/bin/sh
+LOG=/var/log/ombu-reanudar.log
+(
+    echo "=== $(date '+%F %T') reanudó ($1 $2)"
+    sleep 2
+    export DISPLAY=:0
+    for xa in /var/run/lightdm/root/:0 /run/lightdm/root/:0; do
+        [ -r "$xa" ] && export XAUTHORITY="$xa" && break
+    done
+    out="$(xrandr --query 2>/dev/null | awk '/ connected/ {print $1; exit}')"
+    if command -v chvt >/dev/null 2>&1; then
+        cur="$(fgconsole 2>/dev/null || echo 7)"
+        chvt 2; sleep 1; chvt "$cur"; sleep 1
+    fi
+    [ -n "$out" ] && { xrandr --output "$out" --off; sleep 1; xrandr --output "$out" --auto; }
+    xset dpms force on 2>/dev/null
+    command -v xrefresh >/dev/null 2>&1 && xrefresh
+    echo "fin"
+) >>"$LOG" 2>&1
+exit 0
+EOT
+    chmod 755 /usr/lib/systemd/system-sleep/ombu-reanudar /usr/lib/ombu/reanudar-pantalla
+
+    # Sintonizador de TV USB Siano sin firmware: rompe la reanudación.
+    cat > /etc/modprobe.d/ombu-sin-tv-usb.conf <<'EOT'
+blacklist smsusb
+blacklist smsdvb
+blacklist smsmdtv
+install smsusb /bin/false
+install smsdvb /bin/false
+install smsmdtv /bin/false
+EOT
 fi
 
 # El instalador no hace falta en el sistema instalado

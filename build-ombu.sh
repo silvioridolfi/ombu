@@ -116,8 +116,8 @@ if [ -z "$OUT" ]; then
 fi
 [ -n "$OUT" ] || OUT="$WORK/out"
 mkdir -p "$OUT"
-cp -f "$ISO" "$OUT/ombu-1.5-amd64.iso"
-( cd "$OUT" && sha256sum ombu-1.5-amd64.iso | tee ombu-1.5-amd64.iso.sha256 )
+cp -f "$ISO" "$OUT/ombu-1.6-amd64.iso"
+( cd "$OUT" && sha256sum ombu-1.6-amd64.iso | tee ombu-1.6-amd64.iso.sha256 )
 
-say "Listo. ISO en: $OUT/ombu-1.5-amd64.iso"
+say "Listo. ISO en: $OUT/ombu-1.6-amd64.iso"
 echo "Siguiente paso: grabarla en un pendrive con Rufus (modo DD o ISO) o balenaEtcher."

@@ -1,4 +1,4 @@
-# Ombú 1.5 — Libre, simple y nuestro
+# Ombú 1.6 — Libre, simple y nuestro
 
 Sistema operativo libre pensado para las netbooks de las escuelas de Región 1. Es una iniciativa del equipo territorial de la DTE Región 1: una propuesta de tecnología educativa para enseñar, aprender y crear con lo que ya tenemos.
 
@@ -6,7 +6,7 @@ Base: Debian 13 "trixie" · Escritorio: XFCE · Instalador: Calamares · Sin tel
 
 - Sitio: <https://v0-ombudte.vercel.app>
 - Guía de instalación: <https://v0-ombudte.vercel.app/guia>
-- Descarga (ISO 1.5, versión de prueba): <https://github.com/silvioridolfi/ombu/releases/tag/v1.5>
+- Descarga (ISO 1.6, versión de prueba): <https://github.com/silvioridolfi/ombu/releases/tag/v1.6>
 
 > Es una versión de prueba. Seguimos haciendo pruebas de compatibilidad en distintos modelos de netbooks escolares para llegar a la mayor cantidad posible.
 
@@ -71,7 +71,7 @@ Genera un informe `.txt` en la carpeta personal con los datos del equipo (modelo
    cd /mnt/c/ombu
    bash build-ombu.sh
    ```
-   Hace todo solo: instala herramientas, baja TurboWarp, construye la ISO y la copia a la carpeta **Descargas** de Windows como `ombu-1.5-amd64.iso`.
+   Hace todo solo: instala herramientas, baja TurboWarp, construye la ISO y la copia a la carpeta **Descargas** de Windows como `ombu-1.6-amd64.iso`.
    Tarda entre 30 y 90 minutos y necesita unos 20 GB libres.
 
 Si la descarga de TurboWarp falla, bajar a mano `TurboWarp-linux-amd64-X.Y.Z.deb` desde

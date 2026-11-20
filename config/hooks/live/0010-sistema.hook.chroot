@@ -25,10 +25,10 @@ cat > /etc/hosts <<EOT
 ::1         localhost ip6-localhost ip6-loopback
 EOT
 cat > /etc/os-release <<EOT
-PRETTY_NAME="Ombú 1.5 (basado en Debian 13)"
+PRETTY_NAME="Ombú 1.6 (basado en Debian 13)"
 NAME="Ombú"
-VERSION_ID="1.5"
-VERSION="1.5"
+VERSION_ID="1.6"
+VERSION="1.6"
 VERSION_CODENAME=trixie
 ID=ombu
 ID_LIKE=debian
@@ -36,8 +36,8 @@ HOME_URL="https://abc.gob.ar"
 SUPPORT_URL="https://abc.gob.ar"
 BUG_REPORT_URL="https://abc.gob.ar"
 EOT
-printf 'Ombú 1.5 \\n \\l\n\n' > /etc/issue
-printf 'Ombú 1.5\n' > /etc/issue.net
+printf 'Ombú 1.6 \\n \\l\n\n' > /etc/issue
+printf 'Ombú 1.6\n' > /etc/issue.net
 : > /etc/motd
 
 # ---------- Tipografías ----------
