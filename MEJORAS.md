@@ -53,7 +53,7 @@ El historial de lo ya entregado por versión está en `CHANGELOG.md`. Acá va lo
 - [x] Release v1.6 publicada en GitHub con ISO y .sha256 (20/11/2026).
 - [x] Entrada 1.6 en `lib/novedades.ts` del sitio, publicada (20/11/2026).
 - [x] CHANGELOG.md y este archivo subidos a `silvioridolfi/ombu` (20/11/2026).
-- [ ] Subir al repositorio las fuentes de la 1.6 (post-install.sh, versión en 6 archivos, branding.desc): hoy el repo tiene las fuentes de la 1.5.
+- [x] Fuentes de la 1.6 subidas a `silvioridolfi/ombu` (20/11/2026). Ojo: el README del repositorio es la versión pública (más completa que la que tenía la carpeta local); se copió al revés a `ombu/README.md` para que no queden desfasados. El archivo `Estudiantes.nmconnection` (clave del Wi-Fi) NO se sube: está en `.gitignore` a propósito. Al sincronizar la carpeta con el repo, excluir `config/includes.chroot/etc/NetworkManager/system-connections/` y `config/packages.chroot/`.
 - [x] URL de descarga en `constants.ts` actualizada (20/11/2026).
 
 ### Datos de documentación incompletos
