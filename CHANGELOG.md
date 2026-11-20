@@ -5,12 +5,17 @@ La versión más nueva va arriba. La versión en lenguaje simple está en la pá
 
 | Versión | Fecha | Estado |
 |---|---|---|
+| 1.6 | 15 de noviembre de 2026 | Pre-release publicada |
 | 1.5 | 1 de noviembre de 2026 | Pre-release publicada |
 | 1.4 | 31 de octubre de 2026 | Prueba interna |
 | 1.3 | 31 de octubre de 2026 | Prueba interna |
 | 1.2 | 30 de octubre de 2026 | Prueba interna |
 | 1.1 | 30 de octubre de 2026 | Pre-release publicada |
 | 1.0 | octubre de 2026 | Prueba interna |
+
+## 1.6 — 15 de noviembre de 2026 (pre-release)
+- G4: `nomodeset` ahora sí queda aplicado en el sistema instalado (antes lo pisaba `grub.d/ombu.cfg`).
+- G4: puntero visible después de suspender (cursor por software), redibujado de pantalla al reanudar y bloqueo del sintonizador de TV USB que rompía la suspensión. Antes solo existía como script aparte (`ombu-g4-arreglos.sh`).
 
 ## 1.5 — 1 de noviembre de 2026 (pre-release)
 - Fondo definitivo del escritorio y del inicio de sesión (`ombu-fondo-2026.png`).
