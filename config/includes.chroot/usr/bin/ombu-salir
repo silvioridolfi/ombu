@@ -1,0 +1,116 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+"""Salir de Ombú: apagar, reiniciar, suspender o cerrar la sesión, con botones grandes y el nombre de cada acción al lado.
+
+Reemplaza al diálogo gris de xfce4-session-logout (que no concuerda con el estilo del sistema).
+"""
+import os
+import subprocess
+import sys
+
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gdk, Gtk  # noqa: E402
+
+ACCIONES = [
+    ("system-shutdown", "Apagar", "Apaga la netbook", ["systemctl", "poweroff"], "peligro"),
+    ("system-reboot", "Reiniciar", "Vuelve a encender la netbook", ["systemctl", "reboot"], ""),
+    ("system-suspend", "Suspender", "La deja dormida para seguir después", ["systemctl", "suspend"], ""),
+    ("system-log-out", "Cerrar sesión", "Sale de tu cuenta", ["xfce4-session-logout", "--logout", "--fast"], ""),
+]
+if os.environ.get("OMBU_SALIR_PRUEBA") == "1":   # solo para pruebas: no ejecuta nada
+    ACCIONES = [(i, t, d, ["true"], c) for i, t, d, _c, c in ACCIONES]
+
+CSS = b"""
+window, .fondo { background-color: #0e0e1f; color: #ffffff; }
+.titulo { font-size: 20px; font-weight: bold; }
+.subtitulo { color: #aeb3d1; }
+button.accion { background-image: none; background-color: #1b1a3d; color: #ffffff; border: 1px solid #2d2c5a;
+                border-radius: 12px; padding: 10px 16px; box-shadow: none; }
+button.accion:hover, button.accion:focus { background-color: #25245a; border-color: #10A8C0; }
+button.accion label.nombre { font-size: 17px; font-weight: bold; }
+button.accion label.detalle { color: #aeb3d1; font-size: 12px; }
+button.peligro:hover, button.peligro:focus { border-color: #E52277; }
+button.cancelar { background-image: none; background-color: transparent; color: #aeb3d1; border: 1px solid #3a3a6a;
+                  border-radius: 10px; padding: 8px 16px; box-shadow: none; }
+button.cancelar:hover { color: #ffffff; border-color: #10A8C0; }
+"""
+
+
+class Salir(Gtk.Window):
+    def __init__(self):
+        super().__init__(title="Salir de Ombú")
+        self.set_default_size(380, -1)
+        self.set_resizable(False)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_keep_above(True)
+        self.set_icon_name("system-shutdown")
+        prov = Gtk.CssProvider()
+        prov.load_from_data(CSS)
+        Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), prov, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        caja = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin=20)
+        caja.get_style_context().add_class("fondo")
+        self.add(caja)
+        t = Gtk.Label(label="¿Qué querés hacer?", xalign=0)
+        t.get_style_context().add_class("titulo")
+        caja.pack_start(t, False, False, 0)
+        s = Gtk.Label(label="Guardá tu trabajo antes de apagar o reiniciar.", xalign=0)
+        s.get_style_context().add_class("subtitulo")
+        caja.pack_start(s, False, False, 4)
+
+        primero = None
+        for icono, nombre, detalle, cmd, clase in ACCIONES:
+            b = Gtk.Button()
+            ctx = b.get_style_context()
+            ctx.add_class("accion")
+            if clase:
+                ctx.add_class(clase)
+            fila = Gtk.Box(spacing=16)
+            img = Gtk.Image.new_from_icon_name(icono, Gtk.IconSize.DIALOG)
+            img.set_pixel_size(44)
+            fila.pack_start(img, False, False, 0)
+            textos = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER)
+            n = Gtk.Label(label=nombre, xalign=0)
+            n.get_style_context().add_class("nombre")
+            d = Gtk.Label(label=detalle, xalign=0)
+            d.get_style_context().add_class("detalle")
+            textos.pack_start(n, False, False, 0)
+            textos.pack_start(d, False, False, 0)
+            fila.pack_start(textos, True, True, 0)
+            b.add(fila)
+            b.connect("clicked", self.ejecutar, cmd)
+            caja.pack_start(b, False, False, 0)
+            primero = primero or b
+        c = Gtk.Button(label="Cancelar")
+        c.get_style_context().add_class("cancelar")
+        c.connect("clicked", lambda *_: Gtk.main_quit())
+        caja.pack_start(c, False, False, 4)
+
+        self.connect("destroy", Gtk.main_quit)
+        self.connect("key-press-event", lambda w, e: Gtk.main_quit() if e.keyval == Gdk.KEY_Escape else None)
+        self.show_all()
+
+    def ejecutar(self, _b, cmd):
+        self.hide()
+        try:
+            subprocess.Popen(cmd, start_new_session=True)
+        except OSError:
+            pass
+        GLib_idle_quit()
+
+
+def GLib_idle_quit():
+    from gi.repository import GLib
+    GLib.timeout_add(300, Gtk.main_quit)
+
+
+def main():
+    Salir()
+    Gtk.main()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

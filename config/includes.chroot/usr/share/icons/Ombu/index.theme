@@ -1,8 +1,8 @@
 [Icon Theme]
 Name=Ombú
-Comment=Íconos de Ombú (cuadrados redondeados)
+Comment=Íconos de Ombú: estilo Chip, dibujos propios
 Inherits=Papirus,hicolor
-Directories=scalable/apps,scalable/places,scalable/devices
+Directories=scalable/apps,scalable/places,scalable/devices,scalable/mimetypes,scalable/categories,scalable/actions,scalable/status
 
 [scalable/apps]
 Size=64
@@ -24,3 +24,32 @@ MinSize=16
 MaxSize=512
 Type=Scalable
 Context=Devices
+
+[scalable/mimetypes]
+Size=64
+MinSize=16
+MaxSize=512
+Type=Scalable
+Context=MimeTypes
+
+[scalable/categories]
+Size=64
+MinSize=16
+MaxSize=512
+Type=Scalable
+Context=Categories
+
+[scalable/actions]
+Size=64
+MinSize=16
+MaxSize=512
+Type=Scalable
+Context=Actions
+
+[scalable/status]
+Size=64
+MinSize=16
+MaxSize=512
+Type=Scalable
+Context=Status
+

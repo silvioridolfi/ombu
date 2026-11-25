@@ -1,0 +1,23 @@
+#!/bin/sh
+# Ombú — deja el menú de GRUB con una sola entrada: quita el submenú «Opciones avanzadas para Ombú GNU/Linux» de /boot/grub/grub.cfg.
+# GRUB lo genera solo cada vez que corre update-grub, así que esto se llama después de cada update-grub de Ombú
+# (post-install.sh y los ganchos de /etc/kernel/postinst.d y postrm.d cuando se actualiza o se quita un núcleo).
+# Si algo no cuadra (llaves desparejas, no queda ninguna entrada), NO toca el archivo.
+# Soporte técnico: manteniendo apretada la tecla Mayús (BIOS) o Esc (UEFI) al arrancar sigue pudiendo entrar al modo de comandos de GRUB.
+CFG="${OMBU_GRUB_CFG:-/boot/grub/grub.cfg}"
+[ -f "$CFG" ] || exit 0
+grep -q "^submenu " "$CFG" || exit 0                      # nada que quitar (ya está limpio)
+TMP="$(mktemp "$CFG.XXXXXX")" || exit 0
+awk '
+function cuenta(linea,   t, a, c) { t = linea; a = gsub(/\{/, "", t); c = gsub(/\}/, "", t); return a - c }
+saltando { prof += cuenta($0); if (prof <= 0) saltando = 0; next }
+/^submenu / { saltando = 1; prof = cuenta($0); if (prof <= 0) saltando = 0; next }
+{ print }
+' "$CFG" > "$TMP"
+abre=$(tr -cd '{' < "$TMP" | wc -c); cierra=$(tr -cd '}' < "$TMP" | wc -c)
+if [ "$abre" -eq "$cierra" ] && grep -q "^menuentry " "$TMP" && ! grep -q "^submenu " "$TMP"; then
+    [ -f "$CFG.ombu-previo" ] || cp -p "$CFG" "$CFG.ombu-previo"
+    cat "$TMP" > "$CFG"
+fi
+rm -f "$TMP"
+exit 0

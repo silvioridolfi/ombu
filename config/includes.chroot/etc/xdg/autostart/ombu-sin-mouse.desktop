@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Ombú - aviso si no hay mouse
+Exec=/usr/lib/ombu/aviso-sin-mouse
+OnlyShowIn=XFCE;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

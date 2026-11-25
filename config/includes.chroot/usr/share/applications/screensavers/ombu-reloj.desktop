@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Reloj Ombú
+Comment=La hora grande, la fecha y el ombú de fondo.
+Exec=/usr/libexec/xfce4-screensaver/ombu-protector reloj
+TryExec=/usr/libexec/xfce4-screensaver/ombu-protector
+StartupNotify=false
+Terminal=false
+Type=Application
+Categories=Screensaver;
+OnlyShowIn=XFCE;

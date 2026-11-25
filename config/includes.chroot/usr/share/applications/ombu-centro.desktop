@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Centro de software Ombú
+GenericName=Más programas
+Comment=Instalá más programas educativos, de arte, música y oficina (necesita internet)
+Exec=ombu-centro
+Icon=ombu-centro
+Terminal=false
+Categories=System;Settings;PackageManager;
+Keywords=centro;programas;aplicaciones;instalar;descargar;

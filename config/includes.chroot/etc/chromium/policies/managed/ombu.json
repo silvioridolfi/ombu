@@ -1,0 +1,32 @@
+{
+  "MetricsReportingEnabled": false,
+  "BrowserSignin": 0,
+  "SyncDisabled": true,
+  "PasswordManagerEnabled": false,
+  "AutofillCreditCardEnabled": false,
+  "DefaultBrowserSettingEnabled": false,
+  "PromotionalTabsEnabled": false,
+  "BackgroundModeEnabled": false,
+  "SpellcheckEnabled": true,
+  "SpellcheckLanguage": ["es"],
+  "DefaultSearchProviderEnabled": true,
+  "DefaultSearchProviderName": "DuckDuckGo",
+  "DefaultSearchProviderSearchURL": "https://duckduckgo.com/?q={searchTerms}",
+  "HomepageLocation": "https://continuemosestudiando.abc.gob.ar",
+  "HomepageIsNewTabPage": false,
+  "ShowHomeButton": true,
+  "RestoreOnStartup": 4,
+  "RestoreOnStartupURLs": ["https://continuemosestudiando.abc.gob.ar"],
+  "BookmarkBarEnabled": true,
+  "ManagedBookmarks": [
+    { "toplevel_name": "Ombú" },
+    { "name": "Continuemos Estudiando", "url": "https://continuemosestudiando.abc.gob.ar" },
+    { "name": "ABC - Portal educativo", "url": "https://abc.gob.ar" },
+    { "name": "Scratch", "url": "https://scratch.mit.edu/projects/editor/" },
+    { "name": "Pilas Bloques", "url": "https://pilasbloques.program.ar" },
+    { "name": "Program.AR", "url": "https://program.ar" },
+    { "name": "GeoGebra", "url": "https://www.geogebra.org/classic" },
+    { "name": "Educ.ar", "url": "https://www.educ.ar" },
+    { "name": "Wikipedia", "url": "https://es.wikipedia.org" }
+  ]
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Genera el tema de ventanas "Ombu" para xfwm4: barra clara, esquinas superiores redondeadas y
-botones planos de 46 px (minimizar, maximizar/restaurar, cerrar; el cerrar se pone rojo al pasar el mouse).
+botones planos de 46×28 px, todo el rectángulo clicable (minimizar, maximizar/restaurar, cerrar; el cerrar se pone rojo al pasar el mouse).
 
 Uso:  python3 tools/gen-xfwm4-theme.py
 Salida: config/includes.chroot/usr/share/themes/Ombu/xfwm4/
@@ -13,8 +13,8 @@ OUT = os.path.join(ROOT, "config", "includes.chroot", "usr", "share", "themes", 
 SS = 8                     # supersampling para suavizar bordes y trazos
 H = 30                     # alto de la barra de título
 BW = 4                     # grosor de los bordes laterales e inferior
-BTN_W = 34                 # ancho de cada botón
-BTN_H = 22                 # alto del botón (la barra mide 30: queda un margen que no reacciona al mouse)
+BTN_W = 46                 # ancho de cada botón (toda la imagen es zona de clic, ver nota en main())
+BTN_H = 28                 # alto del botón (la barra mide 30: sobra 1 px arriba, que es la línea del borde, y 1 px abajo)
 R = 9                      # radio de las esquinas superiores
 
 ACTIVO = dict(bg="#f4f6fa", borde="#c3c9d6", glifo="#1b1f2a", texto="#1b1f2a")
@@ -146,8 +146,12 @@ def main():
     glifos = ["hide", "maximize", "maximize-toggled", "close", "menu", "shade", "shade-toggled", "stick", "stick-toggled"]
     for g in glifos:
         cerrar = (g == "close")
-        guardar(boton(g, None, ACTIVO["glifo"]), "%s-active" % g)
-        guardar(boton(g, None, INACTIVO["glifo"]), "%s-inactive" % g)
+        # OJO: xfwm4 (sin compositor) recorta la ventana de cada botón con la forma de los píxeles opacos de la imagen.
+        # Si el fondo del botón es transparente, solo reacciona el trazo de la X (1 px de grosor) y hay que apuntar
+        # al centro. Por eso el estado normal lleva el fondo opaco del mismo color que la barra: se ve igual,
+        # pero todo el rectángulo del botón recibe el clic.
+        guardar(boton(g, ACTIVO["bg"], ACTIVO["glifo"]), "%s-active" % g)
+        guardar(boton(g, INACTIVO["bg"], INACTIVO["glifo"]), "%s-inactive" % g)
         guardar(boton(g, CERRAR_PRELIGHT if cerrar else PRELIGHT_BG, "#ffffff" if cerrar else ACTIVO["glifo"]), "%s-prelight" % g)
         guardar(boton(g, CERRAR_PRESSED if cerrar else PRESSED_BG, "#ffffff" if cerrar else ACTIVO["glifo"]), "%s-pressed" % g)
 
@@ -157,7 +161,7 @@ def main():
         "active_text_shadow_color=#ffffff\ninactive_text_shadow_color=#ffffff\n"
         "title_shadow_active=false\ntitle_shadow_inactive=false\n"
         "full_width_title=true\ntitle_vertical_offset_active=0\ntitle_vertical_offset_inactive=0\n"
-        "title_horizontal_offset=10\nbutton_offset=6\nbutton_spacing=3\n"
+        "title_horizontal_offset=10\nbutton_offset=8\nbutton_spacing=0\n"
         "shadow_delta_height=2\nshadow_delta_width=0\nshadow_delta_x=0\nshadow_delta_y=-10\nshadow_opacity=40\n"
         "frame_border_top=0\n" % (ACTIVO["texto"], INACTIVO["texto"]))
     n = len(os.listdir(OUT))

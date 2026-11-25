@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Ombú - ventana de clave de administración
+Comment=Pide la clave de administrador cuando un programa lo necesita (Centro de software, Restaurar Ombú)
+Exec=lxpolkit
+TryExec=lxpolkit
+NoDisplay=true
+OnlyShowIn=XFCE;
+X-GNOME-Autostart-enabled=true

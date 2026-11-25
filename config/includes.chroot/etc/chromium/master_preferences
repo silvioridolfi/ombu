@@ -1,0 +1,14 @@
+{
+  "distribution": {
+    "skip_first_run_ui": true,
+    "show_welcome_page": false,
+    "suppress_first_run_default_browser_prompt": true,
+    "make_chrome_default": false,
+    "make_chrome_default_for_user": false,
+    "import_bookmarks": false,
+    "import_history": false,
+    "import_search_engine": false
+  },
+  "bookmark_bar": { "show_on_all_tabs": true },
+  "browser": { "show_home_button": true }
+}

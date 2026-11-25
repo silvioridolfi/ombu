@@ -1,0 +1,4 @@
+#!/bin/sh
+# Ombú: después de que GRUB regenera su menú por un cambio de núcleo, vuelve a dejar una sola entrada (sin «Opciones avanzadas»).
+[ -x /usr/lib/ombu/grub-limpio ] && /usr/lib/ombu/grub-limpio
+exit 0

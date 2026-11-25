@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Ombú - sonidos del sistema
+Exec=/usr/lib/ombu/sonidos
+OnlyShowIn=XFCE;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

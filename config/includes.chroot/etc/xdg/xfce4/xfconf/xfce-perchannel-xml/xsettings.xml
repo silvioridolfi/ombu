@@ -3,7 +3,8 @@
   <property name="Net" type="empty">
     <property name="ThemeName" type="string" value="Greybird"/>
     <property name="IconThemeName" type="string" value="Ombu"/>
-    <property name="EnableEventSounds" type="bool" value="false"/>
+    <property name="SoundThemeName" type="string" value="freedesktop"/>
+    <property name="EnableEventSounds" type="bool" value="true"/>
     <property name="EnableInputFeedbackSounds" type="bool" value="false"/>
   </property>
   <property name="Gtk" type="empty">

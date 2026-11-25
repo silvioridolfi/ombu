@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE actions [
+<!ELEMENT actions (action)+>
+<!ELEMENT action (icon | patterns | name | unique-id | command | description | directories | audio-files | image-files | other-files | text-files | video-files)*>
+<!ELEMENT icon (#PCDATA)>
+<!ELEMENT command (#PCDATA)>
+<!ELEMENT patterns (#PCDATA)>
+<!ELEMENT name (#PCDATA)>
+<!ATTLIST name xml:lang CDATA #IMPLIED>
+<!ELEMENT unique-id (#PCDATA)>
+<!ELEMENT description (#PCDATA)>
+<!ATTLIST description xml:lang CDATA #IMPLIED>
+<!ELEMENT startup-notify EMPTY>
+<!ELEMENT directories EMPTY>
+<!ELEMENT audio-files EMPTY>
+<!ELEMENT image-files EMPTY>
+<!ELEMENT other-files EMPTY>
+<!ELEMENT text-files EMPTY>
+<!ELEMENT video-files EMPTY>
+]>
+<!-- Ombú: acciones personalizadas de Thunar (menú del botón derecho), en español. -->
+<actions>
+  <action>
+    <icon>utilities-terminal</icon>
+    <patterns>*</patterns>
+    <range/>
+    <name>Abrir una terminal aquí</name>
+    <unique-id>1700000000000001</unique-id>
+    <command>exo-open --working-directory %f --launch TerminalEmulator</command>
+    <description>Abre una terminal en esta carpeta</description>
+    <startup-notify/>
+    <directories/>
+  </action>
+</actions>

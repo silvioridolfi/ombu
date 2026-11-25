@@ -1,0 +1,30 @@
+#!/bin/bash
+# Ombú — parte con privilegios de «Restaurar Ombú». Se llama con pkexec desde /usr/bin/ombu-restaurar.
+# Solo admite dos órdenes y valida el argumento: no ejecuta nada que venga del usuario.
+#   listar                 una línea por instantánea:  NOMBRE<TAB>DESCRIPCIÓN
+#   restaurar NOMBRE       restaura programas y configuración del sistema (NO toca /home)
+set -u
+export PATH="$PATH:/usr/sbin:/sbin"
+BASE=/timeshift/snapshots
+PAT='^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}$'
+
+case "${1:-}" in
+    listar)
+        [ -d "$BASE" ] || exit 0
+        for d in "$BASE"/*/; do
+            n="$(basename "$d")"; [[ "$n" =~ $PAT ]] || continue
+            c="$(sed -n 's/.*"comments" *: *"\(.*\)".*/\1/p' "$d/info.json" 2>/dev/null | head -1)"
+            printf '%s\t%s\n' "$n" "${c:-Instantánea}"
+        done | sort -r
+        ;;
+    restaurar)
+        n="${2:-}"; [[ "$n" =~ $PAT ]] || { echo "Nombre de instantánea inválido."; exit 2; }
+        [ -d "$BASE/$n" ] || { echo "No existe esa instantánea."; exit 2; }
+        dev="$(findmnt -n -o SOURCE /)"
+        # Antes de restaurar se guarda el estado actual, por si hace falta volver atrás.
+        /usr/lib/ombu/restaurar/ombu-snapshot crear "Antes de restaurar el $n" || true
+        exec 9>/run/ombu-snapshot.lock; flock -n 9 || { echo "Hay otra operación en curso."; exit 3; }
+        timeshift --restore --snapshot "$n" --target-device "$dev" --skip-grub --yes --scripted
+        ;;
+    *) echo "Uso: ombu-restaurar-root listar | restaurar NOMBRE"; exit 1 ;;
+esac

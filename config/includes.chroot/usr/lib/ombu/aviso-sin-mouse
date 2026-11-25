@@ -1,0 +1,10 @@
+#!/bin/sh
+# Ombú (solo sesión en vivo): si a los 25 s de iniciar no hay ningún mouse ni touchpad, avisa cómo seguir con el teclado.
+# (En algunas arranques de la G5 el touchpad no se registra; reiniciar suele resolverlo.)
+grep -qw 'boot=live' /proc/cmdline || exit 0
+sleep 25
+grep -q 'Handlers=.*mouse' /proc/bus/input/devices 2>/dev/null && exit 0
+gdbus call --session --dest org.freedesktop.Notifications --object-path /org/freedesktop/Notifications \
+    --method org.freedesktop.Notifications.Notify "Ombú" 0 "input-mouse" "No se detecta el touchpad ni un mouse" \
+    "Podés seguir con el teclado: Alt+F1 abre el menú. Si necesitás el touchpad, reiniciá la netbook (Ctrl+Alt+Supr) o conectá un mouse USB." \
+    "[]" "{'urgency': <byte 1>}" 30000 >/dev/null 2>&1

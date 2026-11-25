@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Poliedros
+Comment=El fondo de poliedros de Ombú, con un reloj chico que cambia de esquina.
+Exec=/usr/libexec/xfce4-screensaver/ombu-protector poliedros
+TryExec=/usr/libexec/xfce4-screensaver/ombu-protector
+StartupNotify=false
+Terminal=false
+Type=Application
+Categories=Screensaver;
+OnlyShowIn=XFCE;

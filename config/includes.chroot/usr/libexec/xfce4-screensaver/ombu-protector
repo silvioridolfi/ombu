@@ -1,0 +1,239 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+"""Protectores de pantalla de Ombú para xfce4-screensaver.
+
+Uso:  ombu-protector ESTILO            (lo lanza xfce4-screensaver y dibuja en la ventana XSCREENSAVER_WINDOW)
+      ombu-protector ESTILO --ventana  (abre una ventana propia, para probar)
+      ombu-protector ESTILO --png RUTA [ANCHOxALTO]   (guarda una imagen y sale, para probar)
+Estilos: reloj, poliedros, saber, descanso.
+
+Dibuja una imagen por minuto (o cada 25 s en «saber»), no animaciones: casi no usa procesador ni batería.
+"""
+import datetime
+import os
+import random
+import select
+import sys
+
+from PIL import Image, ImageDraw, ImageFont
+
+BASE = "/usr/share/ombu/protector/fondo-base.png"
+ICONO = "/usr/share/ombu/brand/ombu-icon-white.png"
+LOGO_DTE = "/usr/share/ombu/brand/logo-dte-blanco.png"
+FUENTE = "/usr/share/fonts/truetype/encodesans/EncodeSans.ttf"
+DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+# Datos verificados (los mismos de las diapositivas del instalador, ver tools/gen-slides.py)
+DATOS = [
+    ["La provincia de Buenos Aires se organiza en", "135 municipios, y su educación, en 25", "regiones educativas."],
+    ["La Plata, capital bonaerense, se fundó el", "19 de noviembre de 1882 y se planificó", "con calles en cuadrícula y diagonales."],
+    ["Según el Censo 2022, en la provincia de", "Buenos Aires viven 17,5 millones de personas."],
+    ["El cerro Tres Picos, en las sierras de la Ventana,", "es el punto más alto de la provincia:", "1.239 metros sobre el nivel del mar."],
+    ["Juan Vucetich, de la policía bonaerense, creó un", "sistema para identificar personas por sus huellas.", "En 1892, en Necochea, se usó por primera vez", "para resolver un caso."],
+    ["Clubes de Tecnología: programación, robótica,", "pensamiento computacional e inteligencia artificial,", "jugando y en equipo."],
+    ["Medios Escolares Bonaerenses: radios, videos y", "proyectos de comunicación hechos por y para", "la comunidad educativa."],
+    ["Continuemos Estudiando es el portal educativo de la", "provincia. Tenés el acceso directo en el escritorio."],
+]
+TITULO_DATOS = ["¿Sabías que…?", "¿Sabías que…?", "¿Sabías que…?", "¿Sabías que…?", "¿Sabías que…?", "En la DTE", "En la DTE", "En la DTE"]
+
+
+def fuente(tam, peso=500):
+    f = ImageFont.truetype(FUENTE, max(8, int(tam)))
+    try:
+        f.set_variation_by_axes([peso, 100])           # ejes: grosor y ancho
+    except Exception:
+        pass
+    return f
+
+
+def hora(ahora):
+    return "%02d:%02d" % (ahora.hour, ahora.minute)
+
+
+def fecha_larga(ahora):
+    return "%s %d de %s" % (DIAS[ahora.weekday()], ahora.day, MESES[ahora.month - 1])
+
+
+def fecha_corta(ahora):
+    return "%s %d %s" % (DIAS[ahora.weekday()][:3], ahora.day, MESES_CORTOS[ahora.month - 1])
+
+
+def fondo(w, h):
+    try:
+        img = Image.open(BASE).convert("RGB")
+    except Exception:
+        return Image.new("RGB", (w, h), (20, 18, 47))
+    # «cubrir»: se llena la pantalla recortando lo que sobre, sin deformar
+    esc = max(w / img.width, h / img.height)
+    img = img.resize((int(img.width * esc) + 1, int(img.height * esc) + 1), Image.BILINEAR)
+    x, y = (img.width - w) // 2, (img.height - h) // 2
+    return img.crop((x, y, x + w, y + h))
+
+
+def velo(img, alfa):
+    capa = Image.new("RGBA", img.size, (8, 6, 28, alfa))
+    return Image.alpha_composite(img.convert("RGBA"), capa)
+
+
+def logo(img, archivo, ancho=None, alto=None, alfa=255, pos=None, centro=None):
+    try:
+        l = Image.open(archivo).convert("RGBA")
+    except Exception:
+        return
+    l = l.crop(l.getbbox())
+    if ancho:
+        l = l.resize((int(ancho), max(1, int(l.height * ancho / l.width))), Image.LANCZOS)
+    elif alto:
+        l = l.resize((max(1, int(l.width * alto / l.height)), int(alto)), Image.LANCZOS)
+    if alfa < 255:
+        l.putalpha(l.split()[3].point(lambda v: v * alfa // 255))
+    if centro:
+        pos = (int(centro[0] - l.width / 2), int(centro[1] - l.height / 2))
+    img.alpha_composite(l, pos)
+
+
+def texto(img, xy, s, tam, color=(255, 255, 255), peso=500, ancla="mm"):
+    ImageDraw.Draw(img).text(xy, s, font=fuente(tam, peso), fill=color, anchor=ancla)
+
+
+def estilo_reloj(w, h, ahora, n):
+    img = velo(fondo(w, h), 70)
+    logo(img, ICONO, alto=h * 0.68, alfa=38, centro=(w / 2, h * 0.47))
+    texto(img, (w / 2, h * 0.43), hora(ahora), h * 0.25, peso=700)
+    texto(img, (w / 2, h * 0.585), fecha_larga(ahora), h * 0.05, color=(222, 230, 242))
+    logo(img, LOGO_DTE, ancho=w * 0.38, pos=(int(w * 0.31), int(h * 0.865)))
+    return img
+
+
+def estilo_poliedros(w, h, ahora, n):
+    img = velo(fondo(w, h), 30)
+    # el reloj cambia de esquina cada minuto (no se queda siempre en el mismo lugar)
+    esquina = (ahora.hour * 60 + ahora.minute) % 4
+    mx, my = w * 0.16, h * 0.14
+    x = mx if esquina in (0, 3) else w - mx
+    y = my if esquina in (0, 1) else h - my
+    texto(img, (x, y), hora(ahora), h * 0.115, peso=700)
+    texto(img, (x, y + h * 0.085), fecha_corta(ahora), h * 0.034, color=(222, 230, 242))
+    return img
+
+
+def estilo_saber(w, h, ahora, n):
+    img = velo(fondo(w, h), 110)
+    i = n % len(DATOS)
+    lineas = DATOS[i]
+    caja = (w * 0.12, h * 0.22, w * 0.88, h * 0.72)
+    capa = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(capa)
+    d.rounded_rectangle(caja, radius=int(h * 0.04), fill=(10, 8, 32, 175), outline=(16, 168, 192, 255), width=max(2, int(h * 0.004)))
+    img = Image.alpha_composite(img, capa)
+    texto(img, (w / 2, h * 0.29), TITULO_DATOS[i], h * 0.06, color=(16, 200, 224), peso=700)
+    tam = h * 0.046
+    paso = tam * 1.5
+    y0 = h * 0.51 - paso * (len(lineas) - 1) / 2
+    for k, l in enumerate(lineas):
+        texto(img, (w / 2, y0 + k * paso), l, tam)
+    texto(img, (caja[2] - w * 0.02, caja[3] - h * 0.04), hora(ahora), h * 0.045, color=(170, 180, 200), ancla="rm")
+    logo(img, LOGO_DTE, ancho=w * 0.30, pos=(int(w * 0.35), int(h * 0.865)))
+    return img
+
+
+def estilo_descanso(w, h, ahora, n):
+    img = Image.new("RGBA", (w, h), (6, 5, 18, 255))
+    # el conjunto se desplaza un poco cada minuto para no marcar siempre los mismos píxeles
+    rnd = random.Random(ahora.hour * 60 + ahora.minute)
+    cx = w / 2 + rnd.uniform(-0.18, 0.18) * w
+    cy = h / 2 + rnd.uniform(-0.12, 0.12) * h
+    logo(img, ICONO, alto=h * 0.22, alfa=200, centro=(cx, cy - h * 0.06))
+    texto(img, (cx, cy + h * 0.17), hora(ahora), h * 0.085, color=(200, 208, 225), peso=600)
+    return img
+
+
+ESTILOS = {"reloj": estilo_reloj, "poliedros": estilo_poliedros, "saber": estilo_saber, "descanso": estilo_descanso}
+# cada cuántos segundos se vuelve a dibujar
+PERIODO = {"reloj": 60, "poliedros": 60, "saber": 25, "descanso": 60}
+
+
+def dibujar(estilo, w, h, n):
+    return ESTILOS[estilo](w, h, datetime.datetime.now(), n).convert("RGB")
+
+
+def enviar(win, gc, depth, img):
+    """Manda la imagen a la ventana de X en tiras chicas (el protocolo limita el tamaño de cada pedido)."""
+    from Xlib import X
+    w, h = img.size
+    datos = img.tobytes("raw", "BGRX")
+    fila = w * 4
+    filas = max(1, 200000 // fila)
+    y = 0
+    while y < h:
+        n = min(filas, h - y)
+        win.put_image(gc, 0, y, w, n, X.ZPixmap, depth, 0, datos[y * fila:(y + n) * fila])
+        y += n
+    win.display.flush()
+
+
+def correr(estilo, ventana_propia):
+    from Xlib import X, display
+    d = display.Display()
+    if ventana_propia:
+        raiz = d.screen().root
+        g = raiz.get_geometry()
+        win = raiz.create_window(0, 0, g.width, g.height, 0, d.screen().root_depth, X.InputOutput, X.CopyFromParent,
+                                 background_pixel=0x000000, event_mask=X.ExposureMask)
+        win.map()
+    else:
+        xid = int(os.environ.get("XSCREENSAVER_WINDOW", "0"), 0)
+        if not xid:
+            print("Falta XSCREENSAVER_WINDOW (se lanza desde xfce4-screensaver o con --ventana).", file=sys.stderr)
+            return 1
+        win = d.create_resource_object("window", xid)
+        win.change_attributes(event_mask=X.ExposureMask | X.StructureNotifyMask)
+    gc = win.create_gc()
+    n = 0
+    ultima = None
+    tam = None
+    proximo = 0.0
+    import time
+    while True:
+        ahora = time.time()
+        g = win.get_geometry()
+        if ahora >= proximo or (g.width, g.height) != tam:
+            tam = (g.width, g.height)
+            ultima = dibujar(estilo, g.width, g.height, n)
+            n += 1
+            enviar(win, gc, g.depth, ultima)
+            periodo = PERIODO[estilo]
+            # los estilos de un minuto se vuelven a dibujar justo al cambiar el minuto
+            proximo = ahora + (periodo if periodo != 60 else 60 - (ahora % 60) + 0.2)
+        espera = max(0.2, min(2.0, proximo - time.time()))
+        r, _, _ = select.select([d.fileno()], [], [], espera)
+        while d.pending_events():
+            ev = d.next_event()
+            if ev.type == X.Expose and ultima is not None and ev.count == 0:
+                enviar(win, gc, g.depth, ultima)
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] not in ESTILOS:
+        print(__doc__)
+        return 2
+    estilo = sys.argv[1]
+    if "--png" in sys.argv:
+        i = sys.argv.index("--png")
+        ruta = sys.argv[i + 1]
+        w, h = 1366, 768
+        if len(sys.argv) > i + 2 and "x" in sys.argv[i + 2]:
+            w, h = (int(v) for v in sys.argv[i + 2].split("x"))
+        n = int(os.environ.get("OMBU_PROTECTOR_N", "0"))
+        dibujar(estilo, w, h, n).save(ruta)
+        return 0
+    try:
+        return correr(estilo, "--ventana" in sys.argv)
+    except KeyboardInterrupt:
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

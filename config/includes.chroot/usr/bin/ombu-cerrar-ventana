@@ -1,0 +1,25 @@
+#!/bin/sh
+# Ombú: Alt+F4 cierra la ventana activa; en el escritorio (sin ventana) abre el menú de Ombú.
+id="$(xprop -root _NET_ACTIVE_WINDOW 2>/dev/null | grep -o '0x[0-9a-fA-F]*' | head -n1)"
+if [ -z "$id" ] || [ "$id" = "0x0" ] || xprop -id "$id" _NET_WM_WINDOW_TYPE 2>/dev/null | grep -qE 'DESKTOP|DOCK'; then
+    exec ombu-salir
+fi
+if command -v wmctrl >/dev/null 2>&1; then
+    exec wmctrl -ic "$id"
+fi
+exec python3 - "$id" <<'PY'
+import ctypes, sys
+x = ctypes.CDLL("libX11.so.6")
+x.XOpenDisplay.restype = ctypes.c_void_p
+x.XInternAtom.restype = ctypes.c_ulong
+x.XDefaultRootWindow.restype = ctypes.c_ulong
+d = ctypes.c_void_p(x.XOpenDisplay(None))
+root = x.XDefaultRootWindow(d)
+atom = x.XInternAtom(d, b"_NET_CLOSE_WINDOW", 0)
+class Ev(ctypes.Structure):
+    _fields_ = [("type", ctypes.c_int), ("serial", ctypes.c_ulong), ("send_event", ctypes.c_int), ("display", ctypes.c_void_p),
+                ("window", ctypes.c_ulong), ("message_type", ctypes.c_ulong), ("format", ctypes.c_int), ("data", ctypes.c_long * 5)]
+e = Ev(33, 0, 1, d, int(sys.argv[1], 16), atom, 32, (ctypes.c_long * 5)(0, 2, 0, 0, 0))
+x.XSendEvent(d, ctypes.c_ulong(root), 0, ctypes.c_long(0x180000), ctypes.byref(e))
+x.XFlush(d)
+PY

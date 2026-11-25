@@ -1,0 +1,46 @@
+#!/bin/bash
+# Ombú — «Restaurar Ombú»: vuelve los programas y la configuración del sistema a un estado anterior.
+# No toca los archivos de las personas (Documentos, Descargas, Escritorio, Imágenes…).
+ROOT=/usr/lib/ombu/restaurar/ombu-restaurar-root
+TITULO="Restaurar Ombú"
+ICONO=ombu-restaurar
+
+if grep -q "boot=live" /proc/cmdline 2>/dev/null; then
+    zenity --info --title="$TITULO" --window-icon="$ICONO" --width=420 --text="«Restaurar Ombú» sirve en la netbook ya instalada.
+En la sesión en vivo no está disponible."
+    exit 0
+fi
+
+lista="$(pkexec "$ROOT" listar 2>/dev/null)"
+if [ -z "$lista" ]; then
+    zenity --error --title="$TITULO" --window-icon="$ICONO" --width=420 \
+        --text="Todavía no hay estados guardados para restaurar.\n\nEl primero se crea solo, unos minutos después del primer inicio de la netbook. Probá de nuevo más tarde."
+    exit 1
+fi
+
+filas=(); primero=TRUE
+while IFS=$'\t' read -r nombre desc; do
+    fecha="${nombre%%_*}"; hora="${nombre#*_}"; hora="${hora//-/:}"
+    filas+=("$primero" "$nombre" "${fecha//-//}  $hora" "$desc"); primero=FALSE
+done <<< "$lista"
+
+elegido="$(zenity --list --radiolist --title="$TITULO" --window-icon="$ICONO" --width=600 --height=380 \
+    --text="Elegí el estado al que querés volver.\nSe restauran los programas y la configuración del sistema.\n<b>Tus archivos no se tocan.</b>" \
+    --column="" --column="Nombre" --column="Fecha" --column="Descripción" --hide-column=2 --print-column=2 \
+    "${filas[@]}")" || exit 0
+[ -n "$elegido" ] || exit 0
+
+zenity --question --title="$TITULO" --window-icon="$ICONO" --width=460 --ok-label="Restaurar" --cancel-label="Cancelar" \
+    --text="La netbook va a volver al estado del <b>${elegido%%_*}</b>.\n\n• Los programas y ajustes del sistema vuelven a ese momento.\n• <b>Tus archivos no se tocan.</b>\n• Tarda varios minutos: no apagues ni desenchufes la netbook.\n• Al terminar, se reinicia sola.\n\n¿Querés continuar?" || exit 0
+
+if (pkexec "$ROOT" restaurar "$elegido" 2>&1 | \
+    zenity --progress --pulsate --auto-close --no-cancel --title="$TITULO" --window-icon="$ICONO" --width=420 \
+        --text="Restaurando el sistema… no apagues la netbook."; exit "${PIPESTATUS[0]}"); then
+    zenity --info --title="$TITULO" --window-icon="$ICONO" --width=380 --timeout=10 \
+        --text="Listo. La netbook se va a reiniciar ahora." 
+    systemctl reboot
+else
+    zenity --error --title="$TITULO" --window-icon="$ICONO" --width=420 \
+        --text="No se pudo restaurar el sistema.\nNo se perdió ningún archivo.\n\nAvisale a la persona que administra la netbook."
+    exit 1
+fi

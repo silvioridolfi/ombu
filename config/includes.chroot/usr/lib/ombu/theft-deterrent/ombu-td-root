@@ -1,0 +1,158 @@
+#!/bin/bash
+# Ombú — instalador OPCIONAL del Theft Deterrent de Intel (versión 6 para Linux, empaquetada por Huayra). Corre como administrador.
+#   ombu-td-root simular    tamaño aproximado (lo usa el Centro de software)
+#   ombu-td-root estado     informa si está instalado y cómo anda (líneas clave=valor)
+#   ombu-td-root instalar   descarga el código del repositorio oficial de Huayra, arma los paquetes, los instala y deja la letra y el inicio automático
+#   ombu-td-root quitar     desinstala el programa (el TPM conserva su información: si se vuelve a instalar, retoma)
+# No va en la ISO porque es software no libre de Intel/classmatepc.com: se baja recién cuando alguien lo pide.
+set -u
+export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
+export DEBIAN_FRONTEND=noninteractive LC_ALL=C
+
+REPO="https://github.com/HuayraLinux/theftdeterrent6"
+TAG="theftdeterrent-6.0.0.12.huayra4"
+# Primero la copia de Ombú (no depende de que el proyecto de Huayra siga en línea); si no está, el repositorio de Huayra.
+URLS=("https://github.com/silvioridolfi/ombu/releases/download/complementos/theftdeterrent6-6.0.0.12.huayra4.tar.gz"
+      "$REPO/archive/refs/tags/$TAG.tar.gz")
+# Huella del contenido (sha256 de los sha256 de todos los archivos, en orden): si cambia lo que hay en el repositorio, no se instala.
+HUELLA="11bdbc0d10ffd7f479b2e5ef41bbc61c546f9a9fd63ccd254d15aa506c40e23e"   # calculada con LC_ALL=C (el orden de los archivos depende de la configuración regional)
+PAQUETES="theftdeterrentclient theftdeterrentguardian theftdeterrentdaemon theftdeterrentclient-lib"
+CLIENTE=/opt/TheftDeterrentclient/client
+COMP=/usr/share/ombu/complementos/theft-deterrent
+ESTADO=/var/lib/ombu/theft-deterrent.estado
+TOTAL=7
+TMP=""
+
+paso() { echo "PASO $1/$TOTAL: $2"; }
+falla() { echo "ERROR: $*" >&2; exit 1; }
+limpiar() { [ -n "$TMP" ] && [ -d "$TMP" ] && rm -rf -- "$TMP"; }
+trap limpiar EXIT
+
+[ "$(id -u)" -eq 0 ] || falla "hace falta ser administrador"
+
+instalado() { dpkg -s theftdeterrentclient 2>/dev/null | grep -q '^Status: install ok installed'; }
+hay_tpm() { [ -e /dev/tpm0 ] || [ -d /sys/class/tpm/tpm0 ]; }
+
+cmd_estado() {
+    if instalado; then
+        echo "instalado=si"
+        echo "version=$(dpkg-query -W -f='${Version}' theftdeterrentclient 2>/dev/null)"
+        for s in Theft_Deterrent_agent Theft_Deterrent_guardian tpmdaemon; do
+            if pgrep -f "$s" >/dev/null 2>&1; then echo "$s=activo"; else echo "$s=detenido"; fi
+        done
+        if [ -r /var/theftdeterrent/agent.log ]; then
+            l="$(grep -a 'GetSecureStorageInfo\] info' /var/theftdeterrent/agent.log | tail -n 1)"
+            y="$(sed -n 's/.*expire_date:year:\([0-9]*\),month:\([0-9]*\),day:\([0-9]*\).*/\3-\2-\1/p' <<<"$l")"
+            [ -n "$y" ] && echo "vence=$y"
+            t="$(sed -n 's/.*boot_tick:\([0-9]*\).*/\1/p' <<<"$l")"
+            [ -n "$t" ] && echo "boot_tick=$t"
+        fi
+    else
+        echo "instalado=no"
+    fi
+    if hay_tpm; then echo "tpm=si"; else echo "tpm=no"; fi
+    if grep -q "boot=live" /proc/cmdline 2>/dev/null; then echo "live=si"; else echo "live=no"; fi
+    echo "modelo=$(cat /sys/class/dmi/id/product_name 2>/dev/null)"
+    [ -f "$ESTADO" ] && sed 's/^/instalacion_/' "$ESTADO"
+    return 0
+}
+
+cmd_instalar() {
+    paso 1 "Revisando que la netbook pueda usarlo"
+    grep -q "boot=live" /proc/cmdline 2>/dev/null && falla "En la sesión en vivo no se instala: primero instalá Ombú en la netbook."
+    [ "$(dpkg --print-architecture)" = "amd64" ] || falla "Este programa es solo para equipos de 64 bits."
+    hay_tpm || falla "Esta netbook no tiene TPM (no existe /dev/tpm0): el Theft Deterrent no puede funcionar."
+    instalado && falla "Ya está instalado."
+    libre=$(df -Pm /var/tmp | awk 'NR==2{print $4}')
+    [ "${libre:-0}" -ge 800 ] || falla "Falta espacio: se necesitan unos 800 MB libres y hay ${libre:-0} MB."
+    curl -fsS -m 15 -o /dev/null -I https://github.com || falla "No hay conexión con internet (github.com). Conectá la netbook a una red y probá de nuevo."
+
+    paso 2 "Preparando las herramientas para armar los paquetes"
+    apt-get update -qq >/dev/null 2>&1 || true
+    apt-get install -y -qq --no-install-recommends debhelper dpkg-dev lsb-release fakeroot ca-certificates curl tar >/dev/null 2>&1 \
+        || falla "No se pudieron instalar las herramientas de armado (¿hay internet?)."
+
+    paso 3 "Descargando el programa"
+    TMP="$(mktemp -d /var/tmp/ombu-td.XXXXXX)"
+    bajado=0
+    for u in "${URLS[@]}"; do
+        if curl -fsSL -m 900 -o "$TMP/fuente.tgz" "$u"; then bajado=1; break; fi
+    done
+    [ "$bajado" -eq 1 ] || falla "No se pudo descargar el programa. Revisá la conexión a internet y probá de nuevo."
+    mkdir "$TMP/src"
+    tar xzf "$TMP/fuente.tgz" -C "$TMP/src" || falla "El archivo descargado está dañado."
+    dir="$(find "$TMP/src" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+    [ -d "$dir/debian" ] || falla "La descarga no tiene el contenido esperado."
+    h="$(cd "$dir" && find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)"
+    [ "$h" = "$HUELLA" ] || falla "El contenido descargado no coincide con el que Ombú verificó (cambió el repositorio). No se instala nada. Avisá al equipo de Ombú."
+
+    paso 4 "Armando los paquetes"
+    ( cd "$dir" && dpkg-buildpackage -d -b -us -uc >"$TMP/armado.log" 2>&1 ) || { tail -n 15 "$TMP/armado.log" >&2; falla "No se pudieron armar los paquetes."; }
+    DEBS="$TMP/src"   # dpkg-buildpackage deja los .deb en la carpeta de arriba del código fuente
+    ls "$DEBS"/*.deb >/dev/null 2>&1 || falla "No se generaron los paquetes."
+
+    paso 5 "Instalando el Theft Deterrent"
+    apt-get install -y -qq "$DEBS"/theftdeterrentclient-lib_*.deb "$DEBS"/theftdeterrentdaemon_*.deb \
+        "$DEBS"/theftdeterrentguardian_*.deb "$DEBS"/theftdeterrentclient_*.deb >"$TMP/instalar.log" 2>&1 \
+        || { tail -n 15 "$TMP/instalar.log" >&2; falla "No se pudieron instalar los paquetes."; }
+
+    paso 6 "Ajustando la letra oficial y el inicio automático"
+    if [ -d "$COMP" ]; then
+        install -d -m 755 /usr/share/ombu/td-fuentes
+        install -m 644 "$COMP"/EncodeSans-Regular.ttf "$COMP"/EncodeSans-Bold.ttf /usr/share/ombu/td-fuentes/
+        install -m 644 "$COMP"/td-fonts.conf /usr/share/ombu/td-fonts.conf
+        for f in Theft_Deterrent_client.autorun Theft_Deterrent_client.run; do
+            if [ -f "$CLIENTE/$f" ] && ! grep -q td-fonts.conf "$CLIENTE/$f"; then
+                [ -f "$CLIENTE/$f.orig" ] || cp -p "$CLIENTE/$f" "$CLIENTE/$f.orig"
+                sed -i '1a # Ombú: letra oficial (Encode Sans) legible en este programa\nexport FONTCONFIG_FILE=/usr/share/ombu/td-fonts.conf' "$CLIENTE/$f"
+            fi
+        done
+    fi
+    # Inicio automático para TODOS los usuarios (también los que se creen después). Lleva el mismo nombre que usa el programa en
+    # ~/.config/autostart: así cada usuario tiene una sola entrada y el programa arranca una sola vez.
+    install -d -m 755 /etc/xdg/autostart
+    cat > /etc/xdg/autostart/theftdeterrentclient.desktop <<EOD
+[Desktop Entry]
+Type=Application
+Name=Theft Deterrent client
+Comment=Mantiene la netbook protegida y en contacto con el servidor de EDUCAR
+Exec=$CLIENTE/Theft_Deterrent_client.autorun
+Icon=$CLIENTE/Theft_Deterrent_client.png
+Terminal=false
+Categories=System;
+X-GNOME-Autostart-enabled=true
+EOD
+    chmod 644 /etc/xdg/autostart/theftdeterrentclient.desktop
+
+    paso 7 "Guardando el registro de la instalación"
+    install -d -m 755 /var/lib/ombu
+    { echo "fecha=$(date '+%Y-%m-%d %H:%M')"; echo "origen=$REPO"; echo "version=$TAG"; } > "$ESTADO"
+    echo "LISTO"
+}
+
+cmd_simular() {
+    # Para el Centro de software: nuevos paquetes, descarga (MB) y disco (MB). Valores medidos en la G7, con las herramientas de armado.
+    printf '4	55	250
+'
+}
+
+cmd_quitar() {
+    instalado || falla "No está instalado."
+    echo "PASO 1/2: Desinstalando el Theft Deterrent"
+    pkill -f '/opt/TheftDeterrentclient/' 2>/dev/null || true   # cierra el ícono y los procesos que queden abiertos
+    # shellcheck disable=SC2086
+    apt-get remove --purge -y -qq $PAQUETES >/dev/null 2>&1 || falla "No se pudo desinstalar."
+    echo "PASO 2/2: Limpiando"
+    rm -rf /opt/TheftDeterrentclient   # el programa genera archivos propios que el paquete no borra
+    rm -f /etc/xdg/autostart/theftdeterrentclient.desktop "$ESTADO"
+    rm -rf /usr/share/ombu/td-fuentes /usr/share/ombu/td-fonts.conf
+    echo "LISTO"
+}
+
+case "${1:-}" in
+    estado) cmd_estado ;;
+    simular) cmd_simular ;;
+    instalar) cmd_instalar ;;
+    quitar) cmd_quitar ;;
+    *) echo "uso: ombu-td-root estado|simular|instalar|quitar" >&2; exit 2 ;;
+esac

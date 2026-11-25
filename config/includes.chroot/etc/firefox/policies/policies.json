@@ -6,6 +6,7 @@
     "DisableFeedbackCommands": true,
     "DisableFirefoxAccounts": false,
     "DontCheckDefaultBrowser": true,
+    "DisplayBookmarksToolbar": "always",
     "OverrideFirstRunPage": "",
     "OverridePostUpdatePage": "",
     "NoDefaultBookmarks": true,
@@ -61,6 +62,7 @@
       "browser.urlbar.quicksuggest.enabled": { "Value": false, "Status": "locked" },
       "browser.crashReports.unsubmittedCheck.autoSubmit2": { "Value": false, "Status": "locked" },
       "browser.tabs.crashReporting.sendReport": { "Value": false, "Status": "locked" },
+      "browser.toolbars.bookmarks.visibility": { "Value": "always", "Status": "default" },
       "media.eme.enabled": { "Value": false, "Status": "default" },
       "browser.startup.homepage_override.mstone": { "Value": "ignore", "Status": "default" }
     },

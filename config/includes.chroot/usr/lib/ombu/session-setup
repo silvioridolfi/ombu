@@ -4,6 +4,33 @@ DESK="$(xdg-user-dir DESKTOP 2>/dev/null)"
 [ -n "$DESK" ] || DESK="$HOME/Escritorio"
 mkdir -p "$DESK"
 
+# Carpetas personales (Mis Documentos, Mis Descargas, Mis Imágenes, Mi Música, Mis Videos): se crean si faltan
+# y aparecen en el panel izquierdo del explorador de archivos.
+for v in DOWNLOAD DOCUMENTS MUSIC PICTURES VIDEOS; do
+    d="$(xdg-user-dir $v 2>/dev/null)"
+    [ -n "$d" ] && [ "$d" != "$HOME" ] && mkdir -p "$d"
+done
+mkdir -p "$HOME/.config/gtk-3.0"
+{
+    for v in DOCUMENTS DOWNLOAD PICTURES MUSIC VIDEOS; do
+        d="$(xdg-user-dir $v 2>/dev/null)"
+        [ -n "$d" ] && [ "$d" != "$HOME" ] && printf '%s %s\n' "$(python3 -c 'import sys,urllib.parse as u;print("file://"+u.quote(sys.argv[1]))' "$d")" "$(basename "$d")"
+    done
+} > "$HOME/.config/gtk-3.0/bookmarks" 2>/dev/null
+
+# En sesión live: la pantalla no se apaga ni se bloquea (la instalación puede tardar y no hay actividad)
+if grep -qw 'boot=live' /proc/cmdline; then
+    xset s off s noblank -dpms 2>/dev/null
+    for p in dpms-enabled; do
+        xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/$p -n -t bool -s false 2>/dev/null \
+            || xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/$p -s false 2>/dev/null
+    done
+    for p in blank-on-ac blank-on-battery; do
+        xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/$p -n -t int -s 0 2>/dev/null \
+            || xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/$p -s 0 2>/dev/null
+    done
+fi
+
 # En sesión live: ícono para instalar Ombú
 if grep -qw 'boot=live' /proc/cmdline; then
     cp -f /usr/share/applications/ombu-instalar.desktop "$DESK/"
@@ -47,4 +74,45 @@ fijar_fondo
 
 # Perfil visual (base o completo, según el equipo): ver /usr/lib/ombu/perfil
 [ -x /usr/lib/ombu/perfil ] && /usr/lib/ombu/perfil
+
+# Volumen en 75 %: en la sesión live y en el primer inicio de cada usuario (después se respeta lo que elija la persona).
+# Se espera a que el audio esté listo (hasta 30 s) y se desactiva el silencio.
+MARCA="$HOME/.cache/ombu-volumen-inicial"
+if grep -qw 'boot=live' /proc/cmdline || [ ! -e "$MARCA" ]; then
+    (
+        i=0
+        while [ "$i" -lt 30 ]; do
+            wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.75 2>/dev/null && { wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 2>/dev/null; break; }
+            i=$((i+1)); sleep 1
+        done
+        mkdir -p "$(dirname "$MARCA")"; : > "$MARCA"
+    ) >/dev/null 2>&1 &
+fi
+
+# Micrófono: con el ALSA de fábrica la captura queda al 100 % (+30 dB) y «Mic Boost» al máximo (+36 dB): la grabación se satura
+# (en la G7 se recortó el 15 % de las muestras). Se baja a un valor razonable, una sola vez por usuario.
+MARCA_MIC="$HOME/.cache/ombu-mic-inicial"
+if [ ! -e "$MARCA_MIC" ] && command -v amixer >/dev/null 2>&1; then
+    (
+        sleep 8
+        for card in $(awk -F'[][]' '/^ *[0-9]+ \[/{print $1}' /proc/asound/cards 2>/dev/null | tr -d ' '); do
+            amixer -q -c "$card" sset 'Capture' 55% 2>/dev/null
+            amixer -q -c "$card" sset 'Mic Boost' 1 2>/dev/null
+            amixer -q -c "$card" sset 'Internal Mic Boost' 1 2>/dev/null
+        done
+        mkdir -p "$(dirname "$MARCA_MIC")"; : > "$MARCA_MIC"
+    ) >/dev/null 2>&1 &
+fi
+
+# Orden de los íconos del escritorio (una sola vez por usuario): Mi Equipo, Papelera y el resto por orden alfabético.
+# Se espera a que xfdesktop haya cargado todos los lanzadores.
+MARCA2="$HOME/.cache/ombu-iconos-ordenados-1"
+if [ ! -e "$MARCA2" ] && [ -x /usr/lib/ombu/ordenar-escritorio ]; then
+    (
+        i=0
+        while [ "$i" -lt 30 ] && ! pgrep -x xfdesktop >/dev/null 2>&1; do i=$((i+1)); sleep 1; done
+        sleep 8
+        /usr/lib/ombu/ordenar-escritorio && { mkdir -p "$(dirname "$MARCA2")"; : > "$MARCA2"; }
+    ) >/dev/null 2>&1 &
+fi
 exit 0

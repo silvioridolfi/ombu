@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Mi Equipo
+Comment=Abre tus carpetas y archivos
+Exec=thunar
+Icon=user-home
+Terminal=false
+Categories=System;FileManager;

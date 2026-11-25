@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=¿Sabías que…?
+Comment=Datos curiosos de la provincia de Buenos Aires y de la DTE, que van cambiando.
+Exec=/usr/libexec/xfce4-screensaver/ombu-protector saber
+TryExec=/usr/libexec/xfce4-screensaver/ombu-protector
+StartupNotify=false
+Terminal=false
+Type=Application
+Categories=Screensaver;
+OnlyShowIn=XFCE;

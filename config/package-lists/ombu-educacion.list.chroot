@@ -42,3 +42,23 @@ gstreamer1.0-plugins-bad
 gstreamer1.0-libav
 gstreamer1.0-pulseaudio
 gstreamer1.0-pipewire
+
+# --- Cámara web y sonidos del sistema ---
+cheese
+libcanberra-gtk3-module
+sound-theme-freedesktop
+x11-utils
+gstreamer1.0-gtk3
+gnome-video-effects
+
+# --- Chromium (con uBlock Origin) ---
+chromium
+chromium-l10n
+webext-ublock-origin-chromium
+wmctrl
+xdotool
+wireless-regdb
+rtkit
+gstreamer1.0-tools
+v4l-utils
+pulseaudio-utils

@@ -1,0 +1,92 @@
+#!/bin/bash
+# Ombú — instantáneas del sistema (administrador). Usa Timeshift en modo rsync sobre la misma partición.
+# Las instantáneas guardan programas y configuración del SISTEMA. Nunca guardan ni tocan /home (archivos de
+# estudiantes y docentes), ni las cuentas y contraseñas, ni las redes Wi-Fi guardadas.
+#   ombu-snapshot configurar          escribe /etc/timeshift/timeshift.json para la partición raíz de este equipo
+#   ombu-snapshot crear "texto"       crea una instantánea con esa descripción
+#   ombu-snapshot inicial             crea la instantánea «Estado inicial de Ombú» (una sola vez por instalación)
+#   ombu-snapshot borrar NOMBRE       borra una instantánea
+# Para usar a mano:  sudo /usr/lib/ombu/restaurar/ombu-snapshot crear "antes de instalar X"
+set -u
+export PATH="$PATH:/usr/sbin:/sbin"
+[ "$(id -u)" -eq 0 ] || { echo "Hace falta administrador (sudo)."; exit 1; }
+CONF=/etc/timeshift/timeshift.json
+FLAG=/var/lib/ombu/snapshot-inicial.hecho
+LOCK=/run/ombu-snapshot.lock
+
+configurar() {
+    local dev uuid
+    dev="$(findmnt -n -o SOURCE /)"; uuid="$(blkid -s UUID -o value "$dev" 2>/dev/null)"
+    [ -n "$uuid" ] || { echo "No pude leer el UUID de la partición raíz ($dev)."; return 1; }
+    mkdir -p /etc/timeshift
+    cat > "$CONF" <<EOT
+{
+  "backup_device_uuid" : "$uuid",
+  "parent_device_uuid" : "",
+  "do_first_run" : "false",
+  "btrfs_mode" : "false",
+  "include_btrfs_home_for_backup" : "false",
+  "include_btrfs_home_for_restore" : "false",
+  "stop_cron_emails" : "true",
+  "btrfs_use_qgroup" : "true",
+  "schedule_monthly" : "false",
+  "schedule_weekly" : "false",
+  "schedule_daily" : "false",
+  "schedule_hourly" : "false",
+  "schedule_boot" : "false",
+  "count_monthly" : "0",
+  "count_weekly" : "0",
+  "count_daily" : "0",
+  "count_hourly" : "0",
+  "count_boot" : "0",
+  "snapshot_size" : "0",
+  "snapshot_count" : "0",
+  "date_format" : "%Y-%m-%d %H:%M:%S",
+  "exclude" : [
+    "/home/**",
+    "/root/**",
+    "/etc/passwd",
+    "/etc/shadow",
+    "/etc/group",
+    "/etc/gshadow",
+    "/etc/subuid",
+    "/etc/subgid",
+    "/var/lib/AccountsService/**",
+    "/etc/NetworkManager/system-connections/**"
+  ],
+  "exclude-apps" : []
+}
+EOT
+    chmod 600 "$CONF"
+}
+
+crear() {
+    local texto="${1:-Instantánea}"
+    [ -f "$CONF" ] || configurar || return 1
+    libre="$(df --output=avail -BG / | tail -1 | tr -dc 0-9)"
+    [ "${libre:-0}" -ge 8 ] || { echo "Poco espacio libre (${libre:-0} GB): no se crea la instantánea."; return 1; }
+    exec 9>"$LOCK"; flock -n 9 || { echo "Ya hay una instantánea o restauración en curso."; return 1; }
+    nice -n 19 ionice -c3 timeshift --create --comments "$texto" --scripted
+}
+
+case "${1:-}" in
+    configurar) configurar ;;
+    crear) shift; crear "$*" ;;
+    inicial)
+        mkdir -p /var/lib/ombu
+        [ -f "$FLAG" ] && exit 0
+        TXT="Estado inicial de Ombú"
+        existe() { grep -qsF "$TXT" /timeshift/snapshots/*/info.json 2>/dev/null; }
+        # Ya hay una (de un arranque anterior): se marca como hecho y no se crea otra.
+        if existe; then date '+%F %T' > "$FLAG"; exit 0; fi
+        # El reloj de hardware de algunas netbooks está atrasado (la G5 marcaba abril): se espera la hora de internet (hasta 5 min)
+        i=0; while [ "$i" -lt 60 ] && [ "$(timedatectl show -p NTPSynchronized --value 2>/dev/null)" != yes ]; do i=$((i+1)); sleep 5; done
+        crear "$TXT"
+        # Timeshift puede devolver un código distinto de 0 aunque la instantánea haya quedado bien: se mira el disco.
+        if existe; then date '+%F %T' > "$FLAG"; fi
+        ;;
+    borrar)
+        n="${2:-}"; [[ "$n" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]] || { echo "Nombre inválido."; exit 1; }
+        timeshift --delete --snapshot "$n" --yes --scripted ;;
+    *) sed -n 2,12p "$0"; exit 1 ;;
+esac

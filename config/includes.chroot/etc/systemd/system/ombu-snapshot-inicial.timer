@@ -1,0 +1,11 @@
+[Unit]
+Description=Ombú: crear el estado inicial unos minutos después del arranque
+ConditionKernelCommandLine=!boot=live
+ConditionPathExists=!/var/lib/ombu/snapshot-inicial.hecho
+
+[Timer]
+OnBootSec=4min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

@@ -4,4 +4,10 @@ if ! grep -qw 'boot=live' /proc/cmdline; then
     zenity --error --title="Ombú" --text="El instalador solo funciona desde el USB o DVD de Ombú." 2>/dev/null
     exit 1
 fi
+# Mientras se instala, la pantalla no se apaga ni se bloquea y la netbook no se suspende
+xset s off s noblank -dpms 2>/dev/null
+if command -v systemd-inhibit >/dev/null 2>&1; then
+    exec systemd-inhibit --what=idle:sleep --who="Ombú" --why="Instalando Ombú" \
+        sudo -E env QT_QPA_PLATFORM=xcb calamares
+fi
 exec sudo -E env QT_QPA_PLATFORM=xcb calamares

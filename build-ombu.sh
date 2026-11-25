@@ -53,7 +53,9 @@ chmod +x auto/* config/hooks/live/*.hook.chroot \
     config/includes.chroot/usr/bin/ombu-turbowarp \
     config/includes.chroot/usr/bin/ombu-perfil \
     config/includes.chroot/usr/bin/ombu-instalar \
-    config/includes.chroot/usr/lib/ombu/* 2>/dev/null || true
+    config/includes.chroot/usr/lib/ombu/* \
+    config/includes.chroot/etc/kernel/postinst.d/* config/includes.chroot/etc/kernel/postrm.d/* \
+    config/includes.chroot/usr/libexec/xfce4-screensaver/* 2>/dev/null || true
 # Identificador de compilación (se muestra en "Acerca de Ombú" y en ombu-diagnostico)
 mkdir -p config/includes.chroot/etc/ombu
 date '+%Y%m%d-%H%M' > config/includes.chroot/etc/ombu/build
@@ -108,6 +110,7 @@ ISO="$(ls -1 "$WORK"/*.iso 2>/dev/null | head -n1 || true)"
 # ------------------------------------------------------------------ 7. Entrega
 say "7/7  Copiando la ISO"
 OUT="${OMBU_OUT:-}"
+[ -z "$OUT" ] && [ -d "$SRC_DIR/../salida" ] && OUT="$(cd "$SRC_DIR/../salida" && pwd)"
 if [ -z "$OUT" ]; then
     if command -v cmd.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then
         WINHOME="$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r' || true)"
@@ -116,8 +119,8 @@ if [ -z "$OUT" ]; then
 fi
 [ -n "$OUT" ] || OUT="$WORK/out"
 mkdir -p "$OUT"
-cp -f "$ISO" "$OUT/ombu-1.6-amd64.iso"
-( cd "$OUT" && sha256sum ombu-1.6-amd64.iso | tee ombu-1.6-amd64.iso.sha256 )
+cp -f "$ISO" "$OUT/ombu-1.10-amd64.iso"
+( cd "$OUT" && sha256sum ombu-1.10-amd64.iso | tee ombu-1.10-amd64.iso.sha256 )
 
-say "Listo. ISO en: $OUT/ombu-1.6-amd64.iso"
+say "Listo. ISO en: $OUT/ombu-1.10-amd64.iso"
 echo "Siguiente paso: grabarla en un pendrive con Rufus (modo DD o ISO) o balenaEtcher."

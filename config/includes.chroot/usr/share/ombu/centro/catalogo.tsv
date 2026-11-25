@@ -1,0 +1,36 @@
+# Catálogo del Centro de software Ombú. Lo cura el equipo de Ombú: SOLO se puede instalar lo que figura acá.
+# Columnas separadas por TAB: paquete (Debian)  categoría  nombre  descripción  peso (liviano|medio|pesado)  ícono (del tema)
+# Peso: liviano = hasta unos 50 MB; medio = hasta ~200 MB; pesado = necesita más memoria (mejor en G5/G6 que en G4).
+# Columna 7 opcional: «admin» = no es un paquete de Debian, solo lo ve e instala quien administra la netbook (usa /usr/lib/ombu/theft-deterrent/ombu-td-root).
+kgeography	Aprender y jugar	KGeography	Aprendé geografía con mapas, banderas y capitales.	medio	kgeography
+klettres	Aprender y jugar	KLettres	Aprendé las letras y sus sonidos jugando.	liviano	klettres
+khangman	Aprender y jugar	KHangMan	El juego del ahorcado para practicar vocabulario.	liviano	khangman
+kanagram	Aprender y jugar	KAnagram	Ordená las letras y descubrí la palabra.	liviano	kanagram
+kbruch	Aprender y jugar	KBruch	Practicá fracciones y porcentajes con ejercicios.	liviano	kbruch
+parley	Aprender y jugar	Parley	Tarjetas para memorizar vocabulario y otros idiomas.	medio	parley
+supertux	Aprender y jugar	SuperTux	Juego de plataformas con el pingüino Tux.	medio	supertux
+geogebra	Matemática y ciencias	GeoGebra	Geometría, álgebra y gráficos de funciones.	medio	geogebra
+kmplot	Matemática y ciencias	KmPlot	Dibujá gráficos de funciones matemáticas.	liviano	kmplot
+qalculate-gtk	Matemática y ciencias	Qalculate!	Calculadora científica con unidades y conversiones.	liviano	accessories-calculator
+kalzium	Matemática y ciencias	Kalzium	Tabla periódica de los elementos, con datos de cada uno.	medio	kalzium
+step	Matemática y ciencias	Step	Simulador de física: probá fuerzas, resortes y movimiento.	medio	step
+stellarium	Matemática y ciencias	Stellarium	Planetario: mirá el cielo y las constelaciones.	pesado	stellarium
+marble	Matemática y ciencias	Marble	Globo terráqueo y mapas del mundo.	medio	marble
+thonny	Programación	Thonny	Aprendé Python con un editor pensado para empezar.	liviano	thonny
+geany	Programación	Geany	Editor de código liviano para varios lenguajes.	liviano	geany
+mypaint	Arte y diseño	MyPaint	Pintura digital con pinceles, ideal con tableta.	medio	mypaint
+pencil2d	Arte y diseño	Pencil2D	Hacé animaciones dibujadas cuadro por cuadro.	liviano	pencil2d
+inkscape	Arte y diseño	Inkscape	Dibujo vectorial: logos, afiches e ilustraciones.	pesado	inkscape
+gimp	Arte y diseño	GIMP	Edición de fotos e imágenes.	pesado	gimp
+krita	Arte y diseño	Krita	Pintura e ilustración digital.	pesado	krita
+vlc	Música y video	VLC	Reproduce casi cualquier video o audio.	medio	vlc
+tuxguitar	Música y video	TuxGuitar	Editor de partituras y tablaturas de guitarra.	medio	tuxguitar
+xournalpp	Oficina y lectura	Xournal++	Cuaderno digital: escribí y dibujá a mano sobre PDF.	liviano	xournalpp
+pdfarranger	Oficina y lectura	PDF Arranger	Unir, separar y ordenar páginas de PDF.	liviano	pdfarranger
+gnumeric	Oficina y lectura	Gnumeric	Planilla de cálculo liviana.	liviano	gnumeric
+abiword	Oficina y lectura	AbiWord	Procesador de texto liviano.	liviano	abiword
+fbreader	Oficina y lectura	FBReader	Lector de libros electrónicos (EPUB y otros).	liviano	fbreader
+bleachbit	Utilidades	BleachBit	Liberá espacio borrando archivos temporales.	liviano	bleachbit
+xfburn	Utilidades	Xfburn	Grabá CD y DVD.	liviano	xfburn
+gnome-disk-utility	Utilidades	Discos	Mirá y administrá discos y pendrives.	liviano	org.gnome.DiskUtility
+theftdeterrentclient	Seguridad	Protección antirrobo (Theft Deterrent)	Software de Intel que renueva el certificado de las netbooks del programa nacional con EDUCAR. Solo para administración.	medio	ombu-antirrobo	admin

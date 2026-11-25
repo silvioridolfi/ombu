@@ -1,0 +1,392 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+"""Centro de software Ombú: instala y quita programas de un catálogo curado por el equipo de Ombú.
+
+Solo se puede instalar lo que figura en /usr/share/ombu/centro/catalogo.tsv. La parte con privilegios es
+/usr/lib/ombu/centro/ombu-centro-root (se llama con pkexec y vuelve a validar el nombre contra el catálogo).
+"""
+import grp
+import os
+import subprocess
+import sys
+import threading
+
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+gi.require_version("GdkPixbuf", "2.0")
+from gi.repository import Gdk, GdkPixbuf, GLib, Gtk  # noqa: E402
+
+MARCA = os.environ.get("OMBU_CENTRO_MARCA", "/usr/share/ombu/brand")
+
+# Identidad visual DTE en modo oscuro (turquesa, rosa, magenta y azul de la paleta de la DTE).
+CSS = b"""
+window, .fondo { background-color: #0e0e1f; color: #ffffff; }
+.titulo { font-size: 24px; font-weight: bold; color: #ffffff; }
+.subtitulo { font-size: 14px; color: #aeb3d1; }
+entry { background-color: #17173a; background-image: none; color: #ffffff; border: 1px solid #2d2c5a;
+        border-radius: 6px; padding: 8px 10px; min-height: 28px; box-shadow: none; }
+entry:focus { border-color: #10A8C0; }
+.chip { background-image: none; background-color: transparent; color: #ffffff; border: 1px solid #3a3a6a;
+        border-radius: 8px; padding: 6px 16px; box-shadow: none; }
+.chip:hover { border-color: #10A8C0; }
+.chip:checked { background-color: #10A8C0; color: #04283a; border-color: #10A8C0; font-weight: bold; }
+.tarjeta { background-color: #1b1a3d; border: 1px solid #2d2c5a; border-radius: 14px; }
+.tarjeta .nombre { font-size: 16px; font-weight: bold; color: #ffffff; }
+.tarjeta .desc { color: #b4b9d6; }
+.ficha { border-radius: 14px; padding: 8px; }
+.pastilla { border-radius: 12px; padding: 2px 10px; font-size: 12px; }
+.liviano { background-color: rgba(16,168,192,0.22); color: #53dcc6; }
+.medio { background-color: rgba(229,34,119,0.22); color: #ff7aae; }
+.pesado { background-color: rgba(232,17,35,0.28); color: #ff8a93; }
+.btn-instalar { background-image: none; background-color: #10A8C0; color: #04283a; font-weight: bold;
+                border: none; border-radius: 8px; padding: 8px 20px; box-shadow: none; }
+.btn-instalar:hover { background-color: #3cc3da; }
+.btn-instalar:disabled { background-color: #2a2a55; color: #7377a0; }
+.btn-instalado { background-image: none; background-color: transparent; color: #a3a8c9;
+                 border: 1px solid #3a3a6a; border-radius: 8px; padding: 8px 20px; box-shadow: none; }
+.btn-instalado:hover { border-color: #E52277; color: #ff7aae; }
+.btn-instalado:disabled { color: #5d6189; border-color: #2d2c5a; }
+.pie { color: #8f94b8; font-size: 12px; }
+.estado { color: #53dcc6; }
+.aviso { color: #ff7aae; }
+scrolledwindow, viewport, flowbox, flowboxchild { background-color: transparent; }
+flowboxchild:focus { outline: none; }
+"""
+
+CATALOGO = os.environ.get("OMBU_CENTRO_CATALOGO", "/usr/share/ombu/centro/catalogo.tsv")
+ROOT = os.environ.get("OMBU_CENTRO_ROOT", "/usr/lib/ombu/centro/ombu-centro-root")
+# Programas que NO son paquetes de Debian y solo puede instalar quien administra la netbook (columna 7 del catálogo = «admin»).
+ROOT_ADMIN = os.environ.get("OMBU_CENTRO_ROOT_ADMIN", "/usr/lib/ombu/theft-deterrent/ombu-td-root")
+SIN_PKEXEC = os.environ.get("OMBU_CENTRO_SIN_PKEXEC") == "1"   # solo para pruebas
+TITULO = "Centro de software Ombú"
+PESOS = {"liviano": "Liviano", "medio": "Medio", "pesado": "Pesado"}
+# Color de la ficha detrás del ícono de cada categoría (rgba)
+FICHAS = ["rgba(123,91,214,0.35)", "rgba(229,34,119,0.35)", "rgba(16,168,192,0.35)", "rgba(224,133,43,0.35)",
+          "rgba(45,127,209,0.35)", "rgba(47,163,107,0.35)", "rgba(170,49,122,0.35)"]
+
+
+def es_admin():
+    """True si quien usa el Centro es administrador de la netbook (grupo sudo)."""
+    try:
+        return grp.getgrnam("sudo").gr_gid in os.getgroups() or os.geteuid() == 0
+    except KeyError:
+        return os.geteuid() == 0
+
+
+def leer_catalogo():
+    apps = []
+    admin = es_admin() or os.environ.get("OMBU_CENTRO_VER_ADMIN") == "1"
+    with open(CATALOGO, encoding="utf-8") as f:
+        for linea in f:
+            if linea.startswith("#") or not linea.strip():
+                continue
+            c = linea.rstrip("\n").split("\t")
+            if len(c) >= 6:
+                a = {"pkg": c[0], "cat": c[1], "nombre": c[2], "desc": c[3], "peso": c[4], "icono": c[5],
+                     "admin": len(c) > 6 and c[6].strip() == "admin"}
+                if a["admin"] and not admin:
+                    continue   # los programas de administración no se muestran a quien no administra
+                apps.append(a)
+    return apps
+
+
+def servidor_theft_deterrent():
+    """Dirección del servidor que le corresponde a esta netbook (G7 a G9: citd; G10: tds), según el relevamiento de EDUCAR."""
+    try:
+        modelo = open("/sys/class/dmi/id/product_name").read().strip()
+    except OSError:
+        modelo = ""
+    if modelo == "SF20BA":
+        return "Esta netbook parece una G7: la dirección es citd.dgp.educ.ar"
+    if modelo == "SF20GM7":
+        return "Esta netbook parece una G10: la dirección es tds.educacion.gob.ar"
+    return "G7, G8 y G9: citd.dgp.educ.ar\nG10: tds.educacion.gob.ar\n(Si no estás seguro, preguntá a quien administra la netbook.)"
+
+
+def instalados(paquetes):
+    """Devuelve el conjunto de paquetes del catálogo que ya están instalados."""
+    try:
+        out = subprocess.run(["dpkg-query", "-W", "-f=${Package} ${Status}\n"] + paquetes,
+                             capture_output=True, text=True).stdout
+    except OSError:
+        return set()
+    return {l.split()[0] for l in out.splitlines() if l.endswith("install ok installed")}
+
+
+def privilegiado(*args, raiz=None):
+    cmd = ([] if SIN_PKEXEC else ["pkexec"]) + [raiz or ROOT] + list(args)
+    p = subprocess.run(cmd, capture_output=True, text=True)
+    return p.returncode, (p.stdout + p.stderr).strip()
+
+
+def clase(w, *nombres):
+    ctx = w.get_style_context()
+    for n in nombres:
+        ctx.add_class(n)
+    return w
+
+
+class Centro(Gtk.Window):
+    def __init__(self):
+        super().__init__(title=TITULO)
+        self.set_default_size(1000, 560)
+        self.set_icon_name("ombu-centro")
+        self.apps = leer_catalogo()
+        self.estado = instalados([a["pkg"] for a in self.apps])
+        self.categorias = []
+        for a in self.apps:
+            if a["cat"] not in self.categorias:
+                self.categorias.append(a["cat"])
+        self.categoria = None   # None = todos
+        self.hay_internet = False
+        self.ocupado = True
+        self.botones = {}
+        self.chips = {}
+
+        prov = Gtk.CssProvider()
+        prov.load_from_data(CSS)
+        Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), prov, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        total = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin=18)
+        clase(total, "fondo")
+        self.add(total)
+
+        # --- cabecera: logo, título y subtítulo
+        cab = Gtk.Box(spacing=14)
+        try:
+            pb = GdkPixbuf.Pixbuf.new_from_file_at_size(os.path.join(MARCA, "ombu-icon-color.png"), 56, 56)
+            cab.pack_start(Gtk.Image.new_from_pixbuf(pb), False, False, 0)
+        except GLib.Error:
+            pass
+        tx = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER)
+        tx.pack_start(clase(Gtk.Label(label=TITULO, xalign=0), "titulo"), False, False, 0)
+        tx.pack_start(clase(Gtk.Label(label="Instalá más programas, gratis y libres", xalign=0), "subtitulo"), False, False, 0)
+        cab.pack_start(tx, True, True, 0)
+        total.pack_start(cab, False, False, 0)
+
+        # --- búsqueda
+        self.busqueda = Gtk.SearchEntry(placeholder_text="Buscar programas")
+        self.busqueda.connect("search-changed", lambda *_: self.cuadricula.invalidate_filter())
+        total.pack_start(self.busqueda, False, False, 0)
+
+        # --- categorías como botones redondeados
+        self.fila_chips = Gtk.FlowBox(selection_mode=Gtk.SelectionMode.NONE, homogeneous=False,
+                                      column_spacing=8, row_spacing=8, max_children_per_line=12)
+        for nombre in [None] + self.categorias:
+            b = clase(Gtk.ToggleButton(label=nombre or "Todos"), "chip")
+            b.connect("toggled", self.al_elegir_categoria, nombre)
+            self.chips[nombre] = b
+            self.fila_chips.add(b)
+        total.pack_start(self.fila_chips, False, False, 0)
+
+        self.aviso = clase(Gtk.Label(label="", xalign=0, wrap=True), "aviso")
+        total.pack_start(self.aviso, False, False, 0)
+
+        # --- tarjetas en cuadrícula
+        sc = Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.NEVER)
+        self.cuadricula = Gtk.FlowBox(selection_mode=Gtk.SelectionMode.NONE, homogeneous=True, column_spacing=14,
+                                      row_spacing=14, min_children_per_line=1, max_children_per_line=3,
+                                      valign=Gtk.Align.START, margin_bottom=4)
+        self.cuadricula.set_filter_func(self.filtrar)
+        for a in self.apps:
+            self.cuadricula.add(self.crear_tarjeta(a))
+        sc.add(self.cuadricula)
+        total.pack_start(sc, True, True, 0)
+
+        # --- estado y pie
+        barra = Gtk.Box(spacing=8)
+        self.spinner = Gtk.Spinner()
+        self.estado_txt = clase(Gtk.Label(label="", xalign=0, wrap=True), "estado")
+        barra.pack_start(self.spinner, False, False, 0)
+        barra.pack_start(self.estado_txt, True, True, 0)
+        total.pack_start(barra, False, False, 0)
+        total.pack_start(clase(Gtk.Label(label="Todo lo que ves acá es gratis y libre. Los programas se descargan de internet "
+                                               "y están elegidos por el equipo de Ombú.", xalign=0, wrap=True), "pie"),
+                         False, False, 0)
+
+        self.connect("destroy", Gtk.main_quit)
+        self.show_all()
+        self.chips[None].set_active(True)
+        self.set_focus(None)   # que se vea el texto "Buscar programas" hasta que se toque la búsqueda
+        self.actualizar_botones()
+        self.buscar_novedades()
+
+    # ------------------------------------------------------------ tarjetas
+    def crear_tarjeta(self, a):
+        hijo = Gtk.FlowBoxChild()
+        hijo.app = a
+        caja = clase(Gtk.Box(orientation=Gtk.Orientation.VERTICAL), "tarjeta")
+        caja.set_size_request(270, -1)
+        cuerpo = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8, margin=14)
+        caja.pack_start(cuerpo, True, True, 0)
+
+        color = FICHAS[self.categorias.index(a["cat"]) % len(FICHAS)]
+        ficha = clase(Gtk.Box(halign=Gtk.Align.START), "ficha")
+        prov = Gtk.CssProvider()
+        prov.load_from_data(("* { background-color: %s; }" % color).encode())
+        ficha.get_style_context().add_provider(prov, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        icono = Gtk.Image.new_from_icon_name(a["icono"], Gtk.IconSize.DIALOG)
+        icono.set_pixel_size(40)
+        ficha.add(icono)
+        cuerpo.pack_start(ficha, False, False, 0)
+
+        cuerpo.pack_start(clase(Gtk.Label(label=a["nombre"], xalign=0), "nombre"), False, False, 0)
+        desc = clase(Gtk.Label(label=a["desc"], xalign=0, yalign=0, wrap=True, max_width_chars=30), "desc")
+        desc.set_size_request(-1, 44)
+        cuerpo.pack_start(desc, True, True, 0)
+
+        pie = Gtk.Box(spacing=8)
+        pie.pack_start(clase(Gtk.Label(label=PESOS.get(a["peso"], "")), "pastilla", a["peso"]), False, False, 0)
+        boton = Gtk.Button(label="Instalar", halign=Gtk.Align.END)
+        boton.connect("clicked", self.al_pulsar, a)
+        pie.pack_end(boton, False, False, 0)
+        self.botones[a["pkg"]] = boton
+        cuerpo.pack_start(pie, False, False, 0)
+
+        hijo.add(caja)
+        return hijo
+
+    def filtrar(self, hijo):
+        a = hijo.app
+        if self.categoria is not None and a["cat"] != self.categoria:
+            return False
+        t = self.busqueda.get_text().strip().lower()
+        return not t or t in a["nombre"].lower() or t in a["desc"].lower() or t in a["pkg"]
+
+    def al_elegir_categoria(self, boton, nombre):
+        if not boton.get_active():
+            if self.categoria == nombre:
+                boton.set_active(True)   # siempre hay una elegida
+            return
+        self.categoria = nombre
+        for n, b in self.chips.items():
+            if n != nombre and b.get_active():
+                b.set_active(False)
+        self.cuadricula.invalidate_filter()
+
+    def actualizar_botones(self):
+        for a in self.apps:
+            b = self.botones[a["pkg"]]
+            ya = a["pkg"] in self.estado
+            b.set_label("Instalado" if ya else "Instalar")
+            b.set_tooltip_text("Tocá para quitarlo de la netbook" if ya else None)
+            ctx = b.get_style_context()
+            ctx.remove_class("btn-instalar"); ctx.remove_class("btn-instalado")
+            ctx.add_class("btn-instalado" if ya else "btn-instalar")
+            b.set_sensitive(not self.ocupado and (ya or self.hay_internet))
+
+    def trabajando(self, texto):
+        self.ocupado = bool(texto)
+        self.estado_txt.set_text(texto or "")
+        (self.spinner.start if texto else self.spinner.stop)()
+        self.actualizar_botones()
+
+    def en_hilo(self, trabajo, al_terminar):
+        def correr():
+            r = trabajo()
+            GLib.idle_add(al_terminar, r)
+        threading.Thread(target=correr, daemon=True).start()
+
+    # ---------------------------------------------------- buscar novedades
+    def buscar_novedades(self):
+        self.trabajando("Buscando novedades en internet…")
+        self.en_hilo(lambda: privilegiado("actualizar"), self.novedades_listas)
+
+    def novedades_listas(self, r):
+        self.hay_internet = (r[0] == 0)
+        self.trabajando("")
+        if self.hay_internet:
+            self.aviso.set_text("")
+        elif r[0] == 5:   # hay red, pero apt no pudo leer la lista (típico de una fecha y hora atrasadas)
+            self.aviso.set_markup("<b>No se pudo consultar la lista de programas.</b> Revisá que la fecha y la hora de la "
+                                  "netbook estén bien (el reloj atrasado hace que falle) y volvé a abrir el Centro de software.")
+        elif r[0] in (126, 127):   # se canceló o falló el permiso
+            self.aviso.set_markup("<b>No se pudo pedir permiso para buscar novedades.</b> Cerrá y volvé a abrir el Centro de software.")
+        else:
+            self.aviso.set_markup("<b>Sin conexión a internet.</b> Podés ver los programas, pero para instalar hace falta "
+                                  "conectarse al Wi-Fi. Después volvé a abrir el Centro de software.")
+        self.actualizar_botones()
+
+    # ------------------------------------------------- instalar / quitar
+    def mensaje(self, tipo, texto, botones=Gtk.ButtonsType.OK):
+        d = Gtk.MessageDialog(transient_for=self, modal=True, message_type=tipo, buttons=botones, text=texto)
+        d.set_title(TITULO)
+        r = d.run(); d.destroy()
+        return r
+
+    def confirmar(self, texto, aceptar):
+        d = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.QUESTION, text=texto)
+        d.set_title(TITULO)
+        d.add_button("Cancelar", Gtk.ResponseType.CANCEL)
+        d.add_button(aceptar, Gtk.ResponseType.OK)
+        r = d.run(); d.destroy()
+        return r == Gtk.ResponseType.OK
+
+    def al_pulsar(self, _b, a):
+        raiz = ROOT_ADMIN if a["admin"] else None
+        if a["pkg"] in self.estado:
+            texto = "¿Querés quitar %s?\nTus archivos no se borran." % a["nombre"]
+            if a["admin"]:
+                texto = ("¿Querés quitar %s?\n\nSin este programa la netbook no renueva su certificado con el servidor de EDUCAR "
+                         "y se puede bloquear por seguridad al vencer. Para desbloquearla hace falta un código de EDUCAR." % a["nombre"])
+            if self.confirmar(texto, "Quitar"):
+                self.trabajando("Quitando %s…" % a["nombre"])
+                self.en_hilo(lambda: privilegiado("quitar", a["pkg"], raiz=raiz), lambda r: self.terminado(a, r, "quitado"))
+            return
+        self.trabajando("Calculando el tamaño de %s…" % a["nombre"])
+        self.en_hilo(lambda: privilegiado("simular", a["pkg"], raiz=raiz), lambda r: self.simulado(a, r))
+
+    def simulado(self, a, r):
+        self.trabajando("")
+        if r[0] != 0:
+            self.mensaje(Gtk.MessageType.ERROR, "No se puede instalar %s ahora.\n\n%s" % (a["nombre"], r[1][-300:]))
+            return
+        try:
+            _, desc, disco = (int(x) for x in r[1].split("\t")[:3])
+        except ValueError:
+            desc = disco = 0
+        texto = "¿Querés instalar %s?\n\nSe descargan unos %d MB y ocupa unos %d MB en la netbook." % (a["nombre"], desc, disco)
+        if a["peso"] == "pesado":
+            texto += "\n\nEs un programa pesado: en netbooks con poca memoria puede andar lento."
+        raiz = ROOT_ADMIN if a["admin"] else None
+        if a["admin"]:
+            texto = ("¿Querés instalar %s?\n\nEs software de Intel que usan las netbooks del programa nacional para renovar su "
+                     "certificado con el servidor de EDUCAR. No es libre: por eso no viene dentro de Ombú.\n\n"
+                     "Se descargan unos %d MB y ocupa unos %d MB. Tarda unos minutos y necesita internet. "
+                     "Instalalo solo en netbooks entregadas por el programa." % (a["nombre"], desc, disco))
+        if self.confirmar(texto, "Instalar"):
+            self.trabajando("Instalando %s… puede tardar varios minutos." % a["nombre"])
+            self.en_hilo(lambda: privilegiado("instalar", a["pkg"], raiz=raiz), lambda r2: self.terminado(a, r2, "instalado"))
+
+    def terminado(self, a, r, verbo):
+        self.estado = instalados([x["pkg"] for x in self.apps])
+        self.trabajando("")
+        if r[0] == 0:
+            extra = " Lo encontrás en el menú de aplicaciones." if verbo == "instalado" and not a["admin"] else ""
+            self.estado_txt.set_text("Listo: %s %s.%s" % (a["nombre"], verbo, extra))
+            if a["admin"] and verbo == "instalado":
+                self.mensaje(Gtk.MessageType.INFO,
+                             "El Theft Deterrent quedó instalado. Falta un paso para que se conecte con el servidor:\n\n"
+                             "1. Abrí el ícono del programa en la barra de abajo, a la derecha.\n"
+                             "2. Entrá en la pestaña «Configuración» y tocá «Editar».\n"
+                             "3. En «URL/Dirección de Servidor» escribí la dirección y tocá «Guardar».\n   %s\n"
+                             "4. Tocá «Probar»: tiene que decir que la conexión se estableció.\n"
+                             "5. Cuando el programa pida reiniciar, reiniciá la netbook.\n\n"
+                             "Después de reiniciar, el estado tiene que decir «Normal»." % servidor_theft_deterrent().replace("\n", "\n   "))
+        else:
+            self.mensaje(Gtk.MessageType.ERROR, "No se pudo completar.\n\n%s\n\nProbá de nuevo; si sigue fallando, avisale a quien administra la netbook." % r[1][-300:])
+
+
+def main():
+    if os.path.exists("/proc/cmdline") and "boot=live" in open("/proc/cmdline").read():
+        d = Gtk.MessageDialog(message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.OK,
+                              text="El Centro de software Ombú sirve en la netbook ya instalada.\nEn la sesión en vivo no está disponible.")
+        d.set_title(TITULO); d.run(); return 0
+    Centro()
+    Gtk.main()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,100 @@
+#!/bin/bash
+# Ombú — «Protección antirrobo (Theft Deterrent)»: instala, revisa o quita el Theft Deterrent de Intel (opcional, se baja de internet).
+#   ombu-theft-deterrent              ventanas guiadas (para el menú)
+#   ombu-theft-deterrent estado       muestra el estado en la terminal
+#   ombu-theft-deterrent instalar     instala sin ventanas (pide la clave de administrador)
+#   ombu-theft-deterrent quitar       desinstala sin ventanas
+ROOT=/usr/lib/ombu/theft-deterrent/ombu-td-root
+CLIENTE=/opt/TheftDeterrentclient/client
+TITULO="Protección antirrobo"
+ICONO=ombu-antirrobo
+
+como_admin() { if [ "$(id -u)" -eq 0 ]; then "$ROOT" "$@"; else pkexec "$ROOT" "$@"; fi; }
+
+case "${1:-}" in
+    estado) "$ROOT" estado 2>/dev/null || pkexec "$ROOT" estado; exit $? ;;
+    instalar|quitar) como_admin "$1"; exit $? ;;
+esac
+
+campo() { sed -n "s/^$1=//p" <<<"$ESTADO" | head -n 1; }
+ESTADO="$("$ROOT" estado 2>/dev/null)"
+[ -n "$ESTADO" ] || ESTADO="$(pkexec "$ROOT" estado 2>/dev/null)"
+
+if [ "$(campo live)" = "si" ]; then
+    zenity --info --title="$TITULO" --window-icon="$ICONO" --width=440 \
+        --text="La protección antirrobo se instala en la netbook ya instalada.\nEn la sesión en vivo no está disponible."
+    exit 0
+fi
+
+# Modelo y servidor que le corresponde (según el relevamiento de EDUCAR: G7 a G9 usan citd, G10 usa tds)
+modelo="$(campo modelo)"
+case "$modelo" in
+    SF20BA)  gen="G7";  srv="citd.dgp.educ.ar" ;;
+    SF20GM7) gen="G10"; srv="tds.educacion.gob.ar" ;;
+    *)       gen="";    srv="" ;;
+esac
+if [ -n "$srv" ]; then
+    texto_srv="Esta netbook parece una <b>$gen</b>: la dirección es <b>$srv</b>."
+else
+    texto_srv="G7, G8 y G9: <b>citd.dgp.educ.ar</b>\nG10: <b>tds.educacion.gob.ar</b>\n(Si no estás seguro, preguntá a quien administra la netbook.)"
+fi
+
+abrir_cliente() {
+    ( setsid "$CLIENTE/Theft_Deterrent_client.autorun" >/dev/null 2>&1 &
+      sleep 6
+      setsid "$CLIENTE/Theft_Deterrent_client.run" >/dev/null 2>&1 & ) >/dev/null 2>&1 &
+}
+
+if [ "$(campo instalado)" = "si" ]; then
+    resumen="Versión: $(campo version)"
+    for p in Theft_Deterrent_agent Theft_Deterrent_guardian tpmdaemon; do
+        [ "$(campo $p)" = "activo" ] || resumen="$resumen\n<b>Atención:</b> falta un componente en marcha ($p). Reiniciá la netbook."
+    done
+    [ -n "$(campo vence)" ] && resumen="$resumen\nVencimiento del certificado: $(campo vence)  (día-mes-año)"
+    [ -n "$(campo boot_tick)" ] && resumen="$resumen\nBoot Tick: $(campo boot_tick)"
+    zenity --question --title="$TITULO" --window-icon="$ICONO" --width=480 --ok-label="Abrir el cliente" --cancel-label="Cerrar" \
+        --extra-button="Quitar el programa" \
+        --text="El Theft Deterrent <b>ya está instalado</b>.\n\n$resumen\n\nEl programa corre solo al iniciar la sesión y se ve como un ícono en la barra de abajo, a la derecha. Para ver el estado completo, abrí el cliente." >"${TMPDIR:-/tmp}/.ombu-td-sel.$$" 2>/dev/null
+    rc=$?; sel="$(cat "${TMPDIR:-/tmp}/.ombu-td-sel.$$" 2>/dev/null)"; rm -f "${TMPDIR:-/tmp}/.ombu-td-sel.$$"
+    if [ "$sel" = "Quitar el programa" ]; then
+        zenity --question --title="$TITULO" --window-icon="$ICONO" --width=480 --ok-label="Quitar" --cancel-label="Cancelar" \
+            --text="<b>Esto quita el Theft Deterrent de la netbook.</b>\n\n• Si la netbook es del programa nacional, sin este programa no renueva su certificado con el servidor y se puede <b>bloquear por seguridad</b> al vencer.\n• Para desbloquearla hace falta un código de EDUCAR.\n\n¿Querés quitarlo igual?" || exit 0
+        como_admin quitar 2>&1 | zenity --progress --pulsate --auto-close --no-cancel --title="$TITULO" --window-icon="$ICONO" --width=420 \
+            --text="Quitando el programa…"
+        if [ "${PIPESTATUS[0]}" -eq 0 ]; then
+            zenity --info --title="$TITULO" --window-icon="$ICONO" --width=380 --text="Listo. El Theft Deterrent se quitó."
+        else
+            zenity --error --title="$TITULO" --window-icon="$ICONO" --width=420 --text="No se pudo quitar el programa."
+        fi
+        exit 0
+    fi
+    [ "$rc" -eq 0 ] && abrir_cliente
+    exit 0
+fi
+
+if [ "$(campo tpm)" != "si" ]; then
+    zenity --error --title="$TITULO" --window-icon="$ICONO" --width=460 \
+        --text="Esta netbook no tiene TPM (el chip de seguridad que usa el Theft Deterrent), así que el programa no puede funcionar acá."
+    exit 1
+fi
+
+zenity --question --title="$TITULO" --window-icon="$ICONO" --width=520 --ok-label="Instalar" --cancel-label="Ahora no" \
+    --text="<b>Protección antirrobo (Theft Deterrent de Intel)</b>\n\nEs el programa que usan las netbooks del programa nacional para renovar su certificado con el servidor de EDUCAR y así no bloquearse por seguridad.\n\n• Se descarga de internet (unos 45 MB) del repositorio oficial de Huayra y se prepara en la netbook. Tarda unos minutos y necesita conexión.\n• Es software de Intel, no libre: por eso no viene dentro de Ombú.\n• Instalalo <b>solo en netbooks entregadas por el programa</b>.\n• Al terminar hay que escribir la dirección del servidor y reiniciar.\n\nSe te va a pedir la clave de administrador." || exit 0
+
+LOG="$(mktemp /tmp/ombu-td-log.XXXXXX)"
+{ como_admin instalar 2>&1 | while IFS= read -r l; do
+      echo "$l" >> "$LOG"
+      case "$l" in PASO*) echo "# ${l#*: }" ;; esac
+  done; } | zenity --progress --pulsate --auto-close --no-cancel --title="$TITULO" --window-icon="$ICONO" --width=460 \
+        --text="Preparando la instalación… no apagues la netbook."
+
+if grep -q '^LISTO' "$LOG"; then
+    rm -f "$LOG"
+    zenity --question --title="$TITULO" --window-icon="$ICONO" --width=540 --ok-label="Abrir el cliente" --cancel-label="Lo hago después" \
+        --text="<b>Listo: el Theft Deterrent quedó instalado.</b>\n\nFalta un paso para que se conecte con el servidor:\n\n1. Abrí el cliente (botón de abajo, o el ícono de la barra de abajo a la derecha).\n2. Entrá en la pestaña <b>Configuración</b> y tocá <b>Editar</b>.\n3. En «URL/Dirección de Servidor» escribí la dirección y tocá <b>Guardar</b>:\n    $texto_srv\n4. Tocá <b>Probar</b>: tiene que decir que la conexión se estableció.\n5. Cuando el cliente pida reiniciar, reiniciá la netbook.\n\nDespués de reiniciar, el estado tiene que decir <b>Normal</b>." && abrir_cliente
+else
+    motivo="$(grep '^ERROR' "$LOG" | tail -n 1 | sed 's/^ERROR: //')"
+    zenity --error --title="$TITULO" --window-icon="$ICONO" --width=480 \
+        --text="No se pudo instalar.\n\n${motivo:-Ocurrió un problema inesperado.}\n\nNo se cambió nada importante: podés volver a intentarlo.\nEl detalle quedó en $LOG"
+    exit 1
+fi

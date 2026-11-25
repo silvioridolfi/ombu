@@ -2,16 +2,16 @@
 componentName: ombu
 welcomeStyleCalamares: true
 welcomeExpandingLogo: true
-windowExpanding: normal
-windowSize: 800px,540px
+windowExpanding: noexpand
+windowSize: 760px,470px
 windowPlacement: center
 strings:
     productName:         Ombú
     shortProductName:    Ombú
-    version:             1.6
-    shortVersion:        1.6
-    versionedName:       Ombú 1.6
-    shortVersionedName:  Ombú 1.6
+    version:             1.10
+    shortVersion:        1.10
+    versionedName:       Ombú 1.10
+    shortVersionedName:  Ombú 1.10
     bootloaderEntryName: Ombu
     productUrl:          https://abc.gob.ar
     supportUrl:          https://abc.gob.ar

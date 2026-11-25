@@ -1,0 +1,144 @@
+#!/usr/bin/python3
+# Ombú: ordena los íconos del escritorio una sola vez por usuario.
+#   - «Mi Equipo» arriba a la izquierda y la Papelera justo debajo (como en Windows).
+#   - El resto, por orden alfabético, de arriba hacia abajo y de izquierda a derecha.
+# xfdesktop guarda las posiciones en ~/.config/xfce4/desktop/icons.screen0.yaml y no sabe ordenar solo,
+# así que se lo detiene un instante, se reescribe ese archivo y se lo vuelve a iniciar.
+import configparser, glob, locale, os, re, subprocess, sys, time, unicodedata
+
+HOME = os.path.expanduser("~")
+DESK = subprocess.run(["xdg-user-dir", "DESKTOP"], capture_output=True, text=True).stdout.strip() or HOME + "/Escritorio"
+YAML = HOME + "/.config/xfce4/desktop/icons.screen0.yaml"
+CELDA_ALTO = 125          # alto de una celda de ícono (conservador: mejor una columna de más que un ícono fuera de pantalla)
+MARGEN = 30
+
+
+def nombre(ruta):
+    """Nombre que ve la persona bajo el ícono."""
+    if ruta.endswith(".desktop"):
+        cp = configparser.RawConfigParser(strict=False, interpolation=None)
+        cp.optionxform = str
+        try:
+            cp.read(ruta, encoding="utf-8")
+            sec = cp["Desktop Entry"]
+            for k in ("Name[es_AR]", "Name[es]", "Name"):
+                if k in sec and sec[k].strip():
+                    return sec[k].strip()
+        except Exception:
+            pass
+    return os.path.basename(ruta)
+
+
+def clave(texto):
+    t = unicodedata.normalize("NFD", texto.lower())
+    return "".join(c for c in t if unicodedata.category(c) != "Mn")
+
+
+def filas_disponibles():
+    try:
+        out = subprocess.run(["xprop", "-root", "_NET_WORKAREA"], capture_output=True, text=True).stdout
+        n = [int(x) for x in re.findall(r"\d+", out)]
+        alto = n[3]
+    except Exception:
+        alto = 560
+    return max(3, (alto - MARGEN) // CELDA_ALTO)
+
+
+LOG = HOME + "/.cache/ombu-ordenar.log"
+
+
+def log(msg):
+    try:
+        os.makedirs(os.path.dirname(LOG), exist_ok=True)
+        with open(LOG, "a", encoding="utf-8") as f:
+            f.write("%s  %s\n" % (time.strftime("%F %T"), msg))
+    except Exception:
+        pass
+
+
+def detener():
+    """Cierra xfdesktop (que al salir guarda sus posiciones) y espera a que no haya ninguno, ni uno nuevo, durante 2 s."""
+    subprocess.run(["xfdesktop", "--quit"], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+    libres = 0
+    for _ in range(100):
+        if subprocess.run(["pgrep", "-x", "xfdesktop"], stdout=subprocess.DEVNULL).returncode != 0:
+            libres += 1
+            if libres >= 10:
+                return True
+        else:
+            libres = 0
+            subprocess.run(["xfdesktop", "--quit"], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        time.sleep(0.2)
+    return False
+
+
+def iniciar():
+    subprocess.Popen(["xfdesktop"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+
+
+def calcular():
+    archivos = [os.path.join(DESK, f) for f in os.listdir(DESK) if not f.startswith(".")]
+    mi = [a for a in archivos if os.path.basename(a) == "mi-equipo.desktop"]
+    resto = sorted((a for a in archivos if a not in mi), key=lambda a: clave(nombre(a)))
+    filas = filas_disponibles()
+    pos, lugar = [], 0   # (identificador, columna, fila): celda 0 = Mi Equipo, 1 = Papelera, después el resto alfabético
+    if mi:
+        pos.append((mi[0], 0, 0)); lugar = 1
+    pos.append(("trash:///", lugar // filas, lugar % filas)); lugar += 1
+    for a in resto:
+        pos.append((a, lugar // filas, lugar % filas)); lugar += 1
+    return pos, filas
+
+
+def escribir(pos):
+    lineas = open(YAML, encoding="utf-8").read().split("\n")
+    idx = [i for i, l in enumerate(lineas) if l.strip() == "icons:"]
+    if not idx:
+        raise RuntimeError("el archivo de posiciones no tiene la sección icons")
+    sal = lineas[: idx[0] + 1]
+    for ident, col, fila in pos:
+        sal += ['    "%s":' % ident, "      row: %d" % fila, "      col: %d" % col]
+    open(YAML, "w", encoding="utf-8").write("\n".join(sal) + "\n")
+
+
+def verificar():
+    t = open(YAML, encoding="utf-8").read().replace(" ", "").replace("\n", "")
+    return "mi-equipo.desktop\":row:0col:0" in t
+
+
+def main():
+    if not os.path.isdir(DESK):
+        log("no existe la carpeta del escritorio: %s" % DESK)
+        return 0
+    log("inicio; escritorio=%s; archivos=%s" % (DESK, sorted(os.listdir(DESK))))
+    for intento in range(1, 4):
+        ok_det = detener()
+        log("intento %d: xfdesktop detenido=%s; yaml existe=%s" % (intento, ok_det, os.path.isfile(YAML)))
+        try:
+            if not os.path.isfile(YAML):
+                iniciar(); time.sleep(8); continue
+            pos, filas = calcular()
+            escribir(pos)
+            log("escrito: %d íconos, %d filas por columna" % (len(pos), filas))
+        except Exception as e:
+            log("error al escribir: %r" % e)
+            iniciar(); time.sleep(8); continue
+        iniciar()
+        time.sleep(7)
+        # se comprueba que xfdesktop respetó las posiciones: al cerrarlo guarda las suyas
+        detener()
+        if verificar():
+            log("verificado: Mi Equipo quedó en la fila 0, columna 0")
+            iniciar()
+            return 0
+        log("xfdesktop pisó las posiciones; se reintenta")
+    iniciar()
+    return 1
+
+
+if __name__ == "__main__":
+    try:
+        locale.setlocale(locale.LC_ALL, "")
+    except Exception:
+        pass
+    sys.exit(main())

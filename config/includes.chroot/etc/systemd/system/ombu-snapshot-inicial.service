@@ -1,0 +1,12 @@
+[Unit]
+Description=Ombú: crear el estado inicial del sistema (para «Restaurar Ombú»)
+ConditionKernelCommandLine=!boot=live
+ConditionPathExists=!/var/lib/ombu/snapshot-inicial.hecho
+
+[Service]
+# Lo dispara ombu-snapshot-inicial.timer unos minutos después del arranque, así no cuenta como parte del arranque.
+Type=oneshot
+ExecStart=/usr/lib/ombu/restaurar/ombu-snapshot inicial
+TimeoutStartSec=3h
+Nice=19
+IOSchedulingClass=idle

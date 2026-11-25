@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Descanso (oscuro)
+Comment=Fondo oscuro con el ombú y la hora. Gasta menos batería.
+Exec=/usr/libexec/xfce4-screensaver/ombu-protector descanso
+TryExec=/usr/libexec/xfce4-screensaver/ombu-protector
+StartupNotify=false
+Terminal=false
+Type=Application
+Categories=Screensaver;
+OnlyShowIn=XFCE;

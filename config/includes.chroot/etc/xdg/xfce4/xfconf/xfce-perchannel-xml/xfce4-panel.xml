@@ -49,7 +49,7 @@
     </property>
     <property name="plugin-5" type="string" value="pulseaudio">
       <property name="enable-keyboard-shortcuts" type="bool" value="true"/>
-      <property name="show-notifications" type="bool" value="false"/>
+      <property name="show-notifications" type="bool" value="true"/>
     </property>
     <property name="plugin-6" type="string" value="power-manager-plugin"/>
     <property name="plugin-7" type="string" value="clock">

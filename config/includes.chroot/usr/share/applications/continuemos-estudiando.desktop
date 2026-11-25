@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Continuemos Estudiando
+GenericName=Plataforma educativa
+Comment=Plataforma educativa virtual de la DGCyE (requiere internet)
+Exec=firefox-esr --new-window https://continuemosestudiando.abc.gob.ar
+Icon=continuemos-estudiando
+Terminal=false
+Categories=Education;Network;
+Keywords=continuemos;estudiando;clases;aulas;dgcye;

@@ -20,6 +20,9 @@ xfce4-whiskermenu-plugin
 xfce4-xkb-plugin
 xfce4-datetime-plugin
 xfce4-screenshooter
+xfce4-screensaver
+python3-pil
+python3-xlib
 xfce4-taskmanager
 xfwm4
 xfdesktop4
@@ -28,6 +31,7 @@ python3-gi
 gir1.2-gtk-3.0
 thunar
 thunar-archive-plugin
+thunar-volman
 xarchiver
 mousepad
 ristretto
@@ -58,3 +62,4 @@ fonts-crosextra-carlito
 fonts-crosextra-caladea
 fonts-noto-color-emoji
 fonts-open-sans
+tumbler

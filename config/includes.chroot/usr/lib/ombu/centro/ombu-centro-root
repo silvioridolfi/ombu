@@ -1,0 +1,44 @@
+#!/bin/bash
+# Ombú — parte con privilegios del Centro de software Ombú. Se llama con pkexec desde /usr/bin/ombu-centro.
+# Solo instala o quita paquetes que figuran en el catálogo curado; cualquier otro nombre se rechaza.
+#   actualizar             apt-get update (necesita internet)
+#   simular PAQUETE        imprime: NUEVOS<TAB>DESCARGA_MB<TAB>DISCO_MB
+#   instalar PAQUETE       instala (sin paquetes recomendados, para ocupar poco)
+#   quitar PAQUETE         quita el paquete y lo que quedó sin uso
+set -u
+export PATH="$PATH:/usr/sbin:/sbin" LC_ALL=C DEBIAN_FRONTEND=noninteractive
+CAT=/usr/share/ombu/centro/catalogo.tsv
+APT=(apt-get -o DPkg::Lock::Timeout=120 -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -q)
+
+en_catalogo() { awk -F'\t' -v p="$1" '!/^#/ && $1==p {f=1} END{exit !f}' "$CAT"; }
+
+simular() {
+    local out lista nuevos tot
+    out="$("${APT[@]}" -s install --no-install-recommends "$1" 2>&1)" || { echo "$out" | tail -2; return 4; }
+    lista="$(echo "$out" | awk '/^Inst /{print $2}')"
+    nuevos="$(echo "$lista" | grep -c .)"
+    tot="$(for p in $lista; do
+               apt-cache show "$p" 2>/dev/null | awk '/^Size:/ && !s {s=$2} /^Installed-Size:/ && !i {i=$2} END{print s+0, i+0}'
+           done | awk '{d+=$1; k+=$2} END{printf "%d %d", d/1048576, k/1024}')"
+    set -- ${tot:-0 0}
+    printf '%s\t%s\t%s\n' "$nuevos" "${1:-0}" "${2:-0}"
+}
+
+cmd="${1:-}"; pkg="${2:-}"
+case "$cmd" in
+    actualizar)
+        # Códigos de salida: 0 = lista al día; 6 = sin conexión; 5 = hay red pero apt no pudo (hora atrasada, servidor caído).
+        # Sin --error-on=any, apt devuelve 0 aunque no haya podido bajar nada.
+        exec 9>/run/ombu-centro.lock; flock -w 300 9 || exit 3
+        "${APT[@]}" update --error-on=any >/dev/null 2>&1 && exit 0
+        if getent hosts deb.debian.org >/dev/null 2>&1; then exit 5; else exit 6; fi ;;
+    simular|instalar|quitar)
+        [[ "$pkg" =~ ^[a-z0-9][a-z0-9+.-]*$ ]] && en_catalogo "$pkg" || { echo "Ese programa no está en el catálogo del Centro de software."; exit 2; }
+        exec 9>/run/ombu-centro.lock; flock -w 300 9 || { echo "Hay otra instalación en curso."; exit 3; }
+        case "$cmd" in
+            simular)  simular "$pkg" ;;
+            instalar) "${APT[@]}" install -y --no-install-recommends "$pkg" ;;
+            quitar)   "${APT[@]}" remove -y "$pkg" && "${APT[@]}" autoremove -y ;;
+        esac ;;
+    *) echo "Uso: ombu-centro-root actualizar | simular|instalar|quitar PAQUETE"; exit 1 ;;
+esac

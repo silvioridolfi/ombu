@@ -11,7 +11,7 @@ message-color: "#ffffff"
 message-bg-color: "#14122f"
 
 + label {
-    top = 29%
+    top = 28%
     left = 0
     width = 100%
     align = "center"
@@ -21,21 +21,21 @@ message-bg-color: "#14122f"
 }
 
 + boot_menu {
-    left = 15%
-    width = 70%
-    top = 34%
-    height = 40%
-    item_font = "Ombu Sans Medium 24"
+    left = 22%
+    width = 56%
+    top = 33%
+    height = 38%
+    item_font = "Ombu Sans Medium 20"
     item_color = "#e8edf2"
-    selected_item_font = "Ombu Sans Medium 24"
-    selected_item_color = "#04283a"
+    selected_item_font = "Ombu Sans Medium 20"
+    selected_item_color = "#ffffff"
     selected_item_pixmap_style = "select_*.png"
-    item_height = 42
-    item_padding = 10
-    item_spacing = 6
+    item_height = 24
+    item_padding = 0
+    item_spacing = 28
     icon_width = 0
     icon_height = 0
-    item_icon_space = 0
+    item_icon_space = 14
     scrollbar = false
 }
 
@@ -51,7 +51,7 @@ message-bg-color: "#14122f"
 }
 
 + label {
-    top = 76%
+    top = 75%
     left = 0
     width = 100%
     align = "center"

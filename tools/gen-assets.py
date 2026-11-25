@@ -215,22 +215,35 @@ def rounded(img, radius):
     return out
 
 
+SW, SH = 1000, 380   # diapositivas del instalador: el área real de la presentación es apaisada (~2,5:1, medido en la G5); el QML recorta lo mínimo
+MX = 70
+
+
+def slide_fondo():
+    """Fondo de diapositiva: el mismo degradé de la marca con la silueta del ombú de marca de agua, como el fondo del login."""
+    im = gradient(SW, SH)
+    big = int(SH * 0.95)
+    silhouette(im, big, SW - int(big * 0.78), int(SH * 0.04), alpha=24)
+    return im
+
+
 def slide_creditos():
     """Última diapositiva del instalador: todo el equipo (lista en usr/share/ombu/equipo.txt)."""
     ruta = os.path.join(ROOT, "config", "includes.chroot", "usr", "share", "ombu", "equipo.txt")
     equipo = [l.strip() for l in open(ruta, encoding="utf-8") if l.strip()]
     mitad = (len(equipo) + 1) // 2
-    im = gradient(560, 300)
+    im = slide_fondo()
     d = ImageDraw.Draw(im)
-    d.text((28, 20), "Hecho en el territorio", font=font(32, 800), fill=WHITE)
-    d.text((28, 66), "Equipo de la DTE, Región 1", font=font(17, 500), fill=(255, 255, 255, 210))
+    d.text((MX, 26), "Hecho en el territorio", font=font(42, 800), fill=WHITE)
+    d.text((MX, 80), "Equipo de la DTE, Región 1", font=font(21, 500), fill=(255, 255, 255, 215))
     for i, nombre in enumerate(equipo):
         col, fila = divmod(i, mitad)
-        d.text((28 + col * 250, 98 + fila * 27), nombre, font=font(16, 500), fill=(255, 255, 255, 245))
-    d.text((28, 226), "DTE | Dirección de Tecnología Educativa - Región 1", font=font(15, 500), fill=(255, 255, 255, 235))
-    d.text((28, 248), "La Plata - Provincia de Buenos Aires", font=font(15, 500), fill=(255, 255, 255, 235))
-    d.text((28, 270), "© 2026", font=font(15, 500), fill=(255, 255, 255, 235))
-    save(rounded(im, 22), "calamares", "slide4.png")
+        d.text((MX + col * 300, 122 + fila * 32), nombre, font=font(22, 500), fill=(255, 255, 255, 245))
+    y = 122 + mitad * 32 + 22
+    for ln in ("DTE | Dirección de Tecnología Educativa - Región 1", "La Plata - Provincia de Buenos Aires", "© 2026"):
+        d.text((MX, y), ln, font=font(18, 500), fill=(255, 255, 255, 235))
+        y += 25
+    save(im, "calamares", "slide4.png", mode="RGB")
 
 
 def main():
@@ -301,37 +314,7 @@ def main():
     wlc.alpha_composite(dl, ((457 - dl.width) // 2, 300 - dl.height - 22))
     save(wlc, "calamares", "welcome.png", mode="RGB")
 
-    def slide(title, lines, name, show_icon=True):
-        im = gradient(560, 300)
-        d = ImageDraw.Draw(im)
-        if show_icon:
-            im.alpha_composite(icon_white(120), (22, 22))
-            tx = 160
-        else:
-            tx = 28
-        d.text((tx, 36), title[0], font=font(34, 800), fill=WHITE)
-        if len(title) > 1:
-            d.text((tx, 78), title[1], font=font(34, 800), fill=WHITE)
-        y = 160
-        for ln in lines:
-            d.text((32, y), ln, font=font(21, 500), fill=(255, 255, 255, 240))
-            y += 36
-        save(rounded(im, 22), "calamares", name)
-
-    slide(("Te damos la", "bienvenida a Ombú"),
-          ["El resto de la instalación es automática.",
-           "Tarda unos minutos: es un buen momento",
-           "para tomar unos mates."], "slide1.png")
-    slide(("Todo para aprender", "ya viene incluido"),
-          ["Scratch (TurboWarp), GCompris, Tux Paint,",
-           "LibreOffice, Audacity, Tux Typing,",
-           "Tux Math y Firefox."], "slide2.png")
-    slide(("Software libre,", "sin telemetría"),
-          ["Ombú no envía datos de uso a nadie.",
-           "Es software libre pensado desde el",
-           "territorio para las escuelas de la provincia."], "slide3.png")
-
-    slide_creditos()
+    # Las diapositivas del instalador (13) se generan con tools/gen-slides.py
 
     # Ícono del lanzador "Instalar Ombú"
     ins = gradient(256, 256)

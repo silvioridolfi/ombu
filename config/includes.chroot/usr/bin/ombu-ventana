@@ -1,0 +1,112 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+"""Ombú — acciones de ventana para los atajos con la tecla Windows (Super).
+
+  ombu-ventana escritorio   muestra el escritorio (minimiza todo); otra vez, vuelve a mostrar las ventanas
+  ombu-ventana izquierda    acomoda la ventana activa en la mitad izquierda de la pantalla
+  ombu-ventana derecha      ídem, mitad derecha
+  ombu-ventana maximizar    maximiza la ventana activa; si ya está maximizada, la deja en su tamaño anterior
+  ombu-ventana minimizar    minimiza la ventana activa
+
+Por qué existe: la tecla Win sola abre el menú de Ombú (atajo del panel de control de XFCE) y, mientras ese atajo la tiene tomada,
+el administrador de ventanas no recibe las combinaciones Win + otra tecla. Los atajos de comando sí las reciben: por eso estas
+acciones se disparan como comandos. Usa solo la biblioteca X11 (sin dependencias extra) y los mensajes estándar EWMH.
+"""
+import ctypes
+import sys
+import time
+from ctypes import POINTER, byref, c_int, c_long, c_ubyte, c_ulong, c_void_p
+
+x = ctypes.CDLL("libX11.so.6")
+x.XOpenDisplay.restype = c_void_p
+x.XInternAtom.restype = c_ulong
+x.XDefaultRootWindow.restype = c_ulong
+x.XGetWindowProperty.argtypes = [c_void_p, c_ulong, c_ulong, c_long, c_long, c_int, c_ulong, POINTER(c_ulong), POINTER(c_int),
+                                 POINTER(c_ulong), POINTER(c_ulong), POINTER(POINTER(c_ubyte))]
+d = c_void_p(x.XOpenDisplay(None))
+if not d:
+    sys.exit("No hay pantalla (DISPLAY).")
+root = x.XDefaultRootWindow(d)
+
+
+class Evento(ctypes.Structure):
+    _fields_ = [("type", c_int), ("serial", c_ulong), ("send_event", c_int), ("display", c_void_p), ("window", c_ulong),
+                ("message_type", c_ulong), ("format", c_int), ("data", c_long * 5)]
+
+
+def atomo(nombre):
+    return x.XInternAtom(d, nombre.encode(), 0)
+
+
+def propiedad(ventana, nombre, largo=1024):
+    t, f, n, r = c_ulong(), c_int(), c_ulong(), c_ulong()
+    datos = POINTER(c_ubyte)()
+    x.XGetWindowProperty(d, ventana, atomo(nombre), 0, largo, 0, 0, byref(t), byref(f), byref(n), byref(r), byref(datos))
+    if not datos or n.value == 0 or f.value != 32:
+        return []
+    arr = ctypes.cast(datos, POINTER(c_ulong))
+    valores = [arr[i] for i in range(n.value)]
+    x.XFree(datos)
+    return valores
+
+
+def mensaje(ventana, tipo, datos):
+    ev = Evento(33, 0, 1, d, ventana, atomo(tipo), 32, (c_long * 5)(*datos))
+    x.XSendEvent(d, c_ulong(root), 0, c_long(0x180000), byref(ev))
+    x.XFlush(d)
+
+
+def ventana_activa():
+    v = propiedad(root, "_NET_ACTIVE_WINDOW")
+    if not v or v[0] == 0:
+        return 0
+    tipos = propiedad(v[0], "_NET_WM_WINDOW_TYPE")
+    if atomo("_NET_WM_WINDOW_TYPE_DESKTOP") in tipos or atomo("_NET_WM_WINDOW_TYPE_DOCK") in tipos:
+        return 0   # el escritorio o el panel no se acomodan
+    return v[0]
+
+
+def quitar_maximizado(w):
+    estado = propiedad(w, "_NET_WM_STATE")
+    mv, mh = atomo("_NET_WM_STATE_MAXIMIZED_VERT"), atomo("_NET_WM_STATE_MAXIMIZED_HORZ")
+    if mv in estado or mh in estado:
+        mensaje(w, "_NET_WM_STATE", [0, mv, mh, 1, 0])
+        time.sleep(0.2)
+
+
+def mitad(w, lado):
+    area = propiedad(root, "_NET_WORKAREA")
+    if len(area) < 4:
+        return
+    ax, ay, aw, ah = (int(v) for v in area[:4])
+    marco = [int(v) for v in propiedad(w, "_NET_FRAME_EXTENTS")] or [0, 0, 0, 0]   # izquierda, derecha, arriba, abajo
+    quitar_maximizado(w)
+    ancho = aw // 2
+    px = ax if lado == "izquierda" else ax + ancho
+    flags = (1 << 8) | (1 << 9) | (1 << 10) | (1 << 11) | (2 << 12)   # x, y, ancho y alto; origen: pager
+    mensaje(w, "_NET_MOVERESIZE_WINDOW", [flags, px, ay, max(100, ancho - marco[0] - marco[1]), max(100, ah - marco[2] - marco[3])])
+
+
+def main():
+    accion = sys.argv[1] if len(sys.argv) > 1 else ""
+    if accion == "escritorio":
+        v = propiedad(root, "_NET_SHOWING_DESKTOP")
+        mensaje(root, "_NET_SHOWING_DESKTOP", [0 if (v and v[0]) else 1, 0, 0, 0, 0])
+        return
+    w = ventana_activa()
+    if not w:
+        return
+    if accion in ("izquierda", "derecha"):
+        mitad(w, accion)
+    elif accion == "maximizar":
+        estado = propiedad(w, "_NET_WM_STATE")
+        mv, mh = atomo("_NET_WM_STATE_MAXIMIZED_VERT"), atomo("_NET_WM_STATE_MAXIMIZED_HORZ")
+        mensaje(w, "_NET_WM_STATE", [0 if (mv in estado and mh in estado) else 1, mv, mh, 1, 0])
+    elif accion == "minimizar":
+        mensaje(w, "WM_CHANGE_STATE", [3, 0, 0, 0, 0])
+    else:
+        sys.exit("uso: ombu-ventana escritorio|izquierda|derecha|maximizar|minimizar")
+
+
+if __name__ == "__main__":
+    main()

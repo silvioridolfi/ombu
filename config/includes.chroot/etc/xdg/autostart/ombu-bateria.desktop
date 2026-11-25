@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Ombú - avisos de batería
+Exec=/usr/lib/ombu/aviso-bateria
+OnlyShowIn=XFCE;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

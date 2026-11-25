@@ -11,8 +11,10 @@
       <property name="&lt;Alt&gt;F3" type="string" value="xfce4-appfinder">
         <property name="startup-notify" type="bool" value="true"/>
       </property>
-      <property name="&lt;Primary&gt;&lt;Alt&gt;Delete" type="string" value="xfce4-session-logout"/>
-      <property name="&lt;Primary&gt;&lt;Alt&gt;l" type="string" value="xflock4"/>
+      <property name="&lt;Primary&gt;&lt;Alt&gt;Delete" type="string" value="ombu-salir"/>
+      <property name="XF86PowerOff" type="string" value="ombu-salir"/>
+      <property name="&lt;Alt&gt;F4" type="string" value="ombu-cerrar-ventana"/>
+      <property name="&lt;Primary&gt;&lt;Alt&gt;l" type="string" value="xfce4-session-logout --logout"/>
       <property name="&lt;Primary&gt;&lt;Alt&gt;t" type="string" value="exo-open --launch TerminalEmulator"/>
       <property name="XF86Display" type="string" value="xfce4-display-settings --minimal"/>
       <property name="&lt;Super&gt;p" type="string" value="xfce4-display-settings --minimal"/>
@@ -24,6 +26,16 @@
       <property name="&lt;Alt&gt;Print" type="string" value="xfce4-screenshooter -w"/>
       <property name="&lt;Shift&gt;Print" type="string" value="xfce4-screenshooter -r"/>
       <property name="&lt;Super&gt;e" type="string" value="thunar"/>
+      <property name="&lt;Super&gt;i" type="string" value="xfce4-settings-manager"/>
+      <property name="&lt;Super&gt;s" type="string" value="xfce4-appfinder"/>
+      <property name="&lt;Super&gt;&lt;Shift&gt;s" type="string" value="xfce4-screenshooter -r"/>
+      <property name="&lt;Super&gt;l" type="string" value="xfce4-session-logout --logout"/>
+      <property name="&lt;Super&gt;d" type="string" value="ombu-ventana escritorio"/>
+      <property name="&lt;Super&gt;m" type="string" value="ombu-ventana escritorio"/>
+      <property name="&lt;Super&gt;Left" type="string" value="ombu-ventana izquierda"/>
+      <property name="&lt;Super&gt;Right" type="string" value="ombu-ventana derecha"/>
+      <property name="&lt;Super&gt;Up" type="string" value="ombu-ventana maximizar"/>
+      <property name="&lt;Super&gt;Down" type="string" value="ombu-ventana minimizar"/>
       <property name="&lt;Primary&gt;&lt;Alt&gt;f" type="string" value="thunar"/>
       <property name="&lt;Primary&gt;&lt;Alt&gt;Escape" type="string" value="xkill"/>
       <property name="&lt;Primary&gt;&lt;Shift&gt;Escape" type="string" value="xfce4-taskmanager"/>
@@ -47,7 +59,7 @@
       <property name="&lt;Primary&gt;&lt;Alt&gt;Down" type="string" value="down_workspace_key"/>
       <property name="&lt;Primary&gt;&lt;Alt&gt;Left" type="string" value="left_workspace_key"/>
       <property name="&lt;Shift&gt;&lt;Alt&gt;Page_Down" type="string" value="lower_window_key"/>
-      <property name="&lt;Alt&gt;F4" type="string" value="close_window_key"/>
+      <property name="&lt;Alt&gt;F4" type="string" value=""/>
       <property name="&lt;Alt&gt;F6" type="string" value="stick_window_key"/>
       <property name="&lt;Alt&gt;F7" type="string" value="move_window_key"/>
       <property name="&lt;Alt&gt;F8" type="string" value="resize_window_key"/>

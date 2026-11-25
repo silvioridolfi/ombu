@@ -1,0 +1,2 @@
+# Ombú: Chromium no usa el llavero de GNOME (con inicio de sesión automático pediría crear una contraseña en inglés)
+export CHROMIUM_FLAGS="$CHROMIUM_FLAGS --password-store=basic --no-first-run --disable-features=Translate"

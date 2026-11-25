@@ -1,0 +1,50 @@
+#!/bin/sh
+# Ombú: avisos de batería (aviso a 30 %, aviso fuerte a 15 % y crítico a 8 % o menos).
+# Cada aviso se muestra 10 segundos y desaparece solo; si se conecta el cargador, desaparece al instante.
+# Se ejecuta en la sesión de cada persona. En equipos sin batería no hace nada.
+SND=/usr/share/sounds/freedesktop/stereo
+BAT="$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -n1)"
+[ -n "$BAT" ] || exit 0
+NOTI="--session --dest org.freedesktop.Notifications --object-path /org/freedesktop/Notifications"
+
+ID_PREV=0
+avisar() {  # título, texto  (urgencia normal y 10 s de duración: así se va sola)
+    salida="$(gdbus call $NOTI --method org.freedesktop.Notifications.Notify "Ombú" "$ID_PREV" "battery-caution" "$1" "$2" "[]" "{'urgency': <byte 1>}" 10000 2>/dev/null)"
+    ID_PREV="$(printf '%s' "$salida" | sed -n 's/.*uint32 \([0-9]*\).*/\1/p')"
+    [ -n "$ID_PREV" ] || ID_PREV=0
+}
+cerrar_aviso() {  # al conectar el cargador, el aviso desaparece
+    [ "$ID_PREV" != 0 ] && gdbus call $NOTI --method org.freedesktop.Notifications.CloseNotification "$ID_PREV" >/dev/null 2>&1
+    ID_PREV=0
+}
+sonar() { [ -f "$SND/$1" ] && pw-play "$SND/$1" >/dev/null 2>&1; }
+
+nivel_avisado=101   # último umbral avisado en esta descarga (para no repetir)
+ultimo_critico=0
+while sleep 20; do
+    est="$(cat "$BAT/status" 2>/dev/null)"
+    cap="$(cat "$BAT/capacity" 2>/dev/null)"
+    [ -n "$cap" ] || continue
+    if [ "$est" != "Discharging" ]; then
+        nivel_avisado=101; ultimo_critico=0; cerrar_aviso
+        continue
+    fi
+    ahora="$(date +%s)"
+    if [ "$cap" -le 8 ]; then
+        # crítico: se repite cada 2 minutos
+        if [ $((ahora - ultimo_critico)) -ge 120 ]; then
+            avisar "¡Batería casi agotada! ($cap %)" "La netbook se va a apagar en cualquier momento. Guardá tu trabajo y conectá el cargador ahora."
+            sonar dialog-warning.oga; sonar dialog-warning.oga
+            ultimo_critico="$ahora"
+        fi
+        nivel_avisado=8
+    elif [ "$cap" -le 15 ] && [ "$nivel_avisado" -gt 15 ]; then
+        avisar "Batería muy baja ($cap %)" "Conectá el cargador pronto y guardá tu trabajo."
+        sonar dialog-warning.oga
+        nivel_avisado=15
+    elif [ "$cap" -le 30 ] && [ "$nivel_avisado" -gt 30 ]; then
+        avisar "Batería baja ($cap %)" "Conviene conectar el cargador."
+        sonar message-new-instant.oga
+        nivel_avisado=30
+    fi
+done

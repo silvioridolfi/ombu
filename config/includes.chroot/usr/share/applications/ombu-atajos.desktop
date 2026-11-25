@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Atajos de teclado
+GenericName=Combinaciones de teclas
+Comment=Las combinaciones de teclas más usadas, iguales o parecidas a las de Windows
+Exec=ombu-atajos
+Icon=input-keyboard
+Terminal=false
+Categories=System;Settings;
+Keywords=atajos;teclas;teclado;windows;combinaciones;

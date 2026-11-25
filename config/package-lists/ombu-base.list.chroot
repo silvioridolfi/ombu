@@ -35,6 +35,7 @@ xdg-user-dirs
 xdg-user-dirs-gtk
 xdg-utils
 polkitd
+lxpolkit
 pkexec
 upower
 udisks2
@@ -88,3 +89,9 @@ sane-utils
 # --- Arranque gráfico ---
 plymouth
 plymouth-label
+
+# --- Restaurar Ombú (instantáneas del sistema) ---
+timeshift
+
+# hwclock (en Debian 13 está en util-linux-extra): lo usa el instalador para dejar la hora del reloj de la placa
+util-linux-extra

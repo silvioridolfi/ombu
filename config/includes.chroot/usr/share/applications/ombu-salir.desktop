@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Apagar o salir
+GenericName=Apagar, reiniciar o cerrar sesión
+Comment=Apagar, reiniciar, suspender o cerrar la sesión
+Exec=ombu-salir
+Icon=system-shutdown
+Terminal=false
+Categories=System;
+Keywords=apagar;reiniciar;suspender;salir;cerrar sesión;

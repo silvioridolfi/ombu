@@ -25,10 +25,10 @@ cat > /etc/hosts <<EOT
 ::1         localhost ip6-localhost ip6-loopback
 EOT
 cat > /etc/os-release <<EOT
-PRETTY_NAME="Ombú 1.6 (basado en Debian 13)"
+PRETTY_NAME="Ombú 1.10 (basado en Debian 13)"
 NAME="Ombú"
-VERSION_ID="1.6"
-VERSION="1.6"
+VERSION_ID="1.10"
+VERSION="1.10"
 VERSION_CODENAME=trixie
 ID=ombu
 ID_LIKE=debian
@@ -36,17 +36,51 @@ HOME_URL="https://abc.gob.ar"
 SUPPORT_URL="https://abc.gob.ar"
 BUG_REPORT_URL="https://abc.gob.ar"
 EOT
-printf 'Ombú 1.6 \\n \\l\n\n' > /etc/issue
-printf 'Ombú 1.6\n' > /etc/issue.net
+printf 'Ombú 1.10 \\n \\l\n\n' > /etc/issue
+printf 'Ombú 1.10\n' > /etc/issue.net
 : > /etc/motd
 
 # ---------- Tipografías ----------
 fc-cache -f
 
+# ---------- Textos en español de los lanzadores que vienen solo en inglés (globos al pasar el puntero) ----------
+# Se reemplaza el primer Comment= del archivo (el del grupo principal); los que ya traen traducción no se tocan.
+traducir() {
+    f="/usr/share/applications/$1.desktop"
+    [ -f "$f" ] || { echo "AVISO: falta $f"; return 0; }
+    sed -i "0,/^Comment=.*/s//Comment=$2/" "$f"
+}
+traducir libreoffice-writer "Crear y editar cartas, informes y documentos con texto e imágenes."
+traducir libreoffice-calc "Hacer cálculos, analizar información y llevar listas en planillas."
+traducir libreoffice-impress "Crear y editar presentaciones."
+traducir libreoffice-draw "Crear y editar dibujos, diagramas y logos."
+traducir libreoffice-math "Crear y editar fórmulas y ecuaciones científicas."
+traducir libreoffice-startcenter "Abrir las aplicaciones para crear documentos, planillas y presentaciones."
+traducir tuxmath "Aprender matemática con Tux."
+traducir tuxtype "Aprender a escribir con el teclado jugando con Tux."
+tw_d="$(grep -il 'turbowarp' /usr/share/applications/*.desktop 2>/dev/null | head -n1 || true)"
+[ -n "$tw_d" ] && traducir "$(basename "$tw_d" .desktop)" "Programación con bloques: una versión más rápida de Scratch."
+# Herramientas técnicas que no tienen que aparecer en el menú de las personas
+for app in timeshift-gtk yad-icon-browser vim; do
+    f="/usr/share/applications/$app.desktop"
+    [ -f "$f" ] && ! grep -q '^NoDisplay=' "$f" && sed -i '0,/^Type=Application/s//Type=Application\nNoDisplay=true/' "$f"
+done
+
+# ---------- Protector de pantalla ----------
+# Quedan solo los cuatro estilos de Ombú (reloj, poliedros, «¿Sabías que…?» y descanso): se ocultan los que trae xfce4-screensaver.
+chmod 755 /usr/libexec/xfce4-screensaver/ombu-protector 2>/dev/null || true
+# («Hidden=true» no alcanza: la lista de temas los muestra igual). Con dpkg-divert quedan apartados y una actualización del paquete no los repone.
+for f in /usr/share/applications/screensavers/xfce-*.desktop; do
+    [ -f "$f" ] && dpkg-divert --quiet --local --rename --add --divert "$f.ombu-oculto" "$f"
+done
+# En el Panel de control y el menú se llama «Protector de pantalla» (Debian lo traduce «Salvapantallas»)
+f=/usr/share/applications/xfce4-screensaver-preferences.desktop
+[ -f "$f" ] && sed -i -e 's/^Name\[es\]=.*/Name[es]=Protector de pantalla/' -e 's/^GenericName\[es\]=.*/GenericName[es]=Protector de pantalla/' "$f"
+
 # ---------- Lanzadores del escritorio para el usuario estudiante ----------
 rmdir /etc/skel/Desktop 2>/dev/null || true
 mkdir -p /etc/skel/Escritorio
-for app in firefox-esr scratch-web pilas-bloques org.kde.gcompris tuxpaint tuxmath libreoffice-writer libreoffice-calc audacity org.kde.ktouch; do
+for app in continuemos-estudiando firefox-esr chromium org.gnome.Cheese scratch-web pilas-bloques org.kde.gcompris tuxpaint tuxmath libreoffice-writer libreoffice-calc audacity org.kde.ktouch; do
     f="/usr/share/applications/$app.desktop"
     [ -f "$f" ] && cp "$f" /etc/skel/Escritorio/ || echo "AVISO: falta $f"
 done
@@ -58,11 +92,32 @@ for f in $tw /etc/skel/Escritorio/"$(basename "$tw" 2>/dev/null)"; do
     [ -f "$f" ] && sed -i 's|^Exec=[^ ]*|Exec=/usr/bin/ombu-turbowarp|' "$f"
 done
 # Nombres cortos para que se lean completos bajo el ícono
-for par in libreoffice-writer:Writer libreoffice-calc:Calc libreoffice-impress:Impress; do
+for par in libreoffice-writer:Writer libreoffice-calc:Calc libreoffice-impress:Impress continuemos-estudiando:Continuemos; do
     f="/etc/skel/Escritorio/${par%%:*}.desktop"
     [ -f "$f" ] && sed -i -e '/^Name\[/d' -e "s/^Name=.*/Name=${par##*:}/" "$f"
 done
+# Chromium: nombre corto (Debian lo llama «Navegador web Chromium» y se corta bajo el ícono)
+for f in /etc/skel/Escritorio/chromium.desktop /usr/share/applications/chromium.desktop; do
+    [ -f "$f" ] && sed -i -e "/^Name\[/d" -e "s/^Name=.*/Name=Chromium/" -e "s/^GenericName=.*/GenericName=Navegador web/" "$f"
+done
+# Cámara web: Cheese con un nombre que se entienda (también en el menú)
+for f in /etc/skel/Escritorio/org.gnome.Cheese.desktop /usr/share/applications/org.gnome.Cheese.desktop; do
+    [ -f "$f" ] && sed -i -e '/^Name\[/d' -e 's/^Name=.*/Name=Cámara/' -e '/^GenericName\[/d' -e 's/^GenericName=.*/GenericName=Cámara web/' \
+        -e '/^Comment\[/d' -e 's/^Comment=.*/Comment=Sacar fotos y grabar videos con la cámara de la netbook./' "$f"
+done
 chmod +x /etc/skel/Escritorio/*.desktop 2>/dev/null || true
+
+# Cursor de «cargando» al abrir programas: se pide aviso de inicio (startup notification) a los lanzadores gráficos
+# que no lo tienen. No se agrega a juegos SDL (Tux Math, Tux Paint, Tux Typing), que nunca avisan que terminaron de abrir.
+for f in /usr/share/applications/*.desktop /etc/skel/Escritorio/*.desktop; do
+    [ -f "$f" ] || continue
+    grep -q '^Type=Application' "$f" || continue
+    grep -q '^StartupNotify=' "$f" && continue
+    grep -q '^Terminal=true' "$f" && continue
+    grep -q '^NoDisplay=true' "$f" && continue
+    case "$f" in */tuxmath.desktop|*/tuxpaint.desktop|*/tuxtype.desktop|*/tuxpaint-config.desktop) continue ;; esac
+    sed -i '0,/^Type=Application/s//Type=Application\nStartupNotify=true/' "$f"
+done
 
 # (El usuario estudiante se crea al instalar: ver /usr/lib/ombu/post-install.sh.
 #  Si existiera en la imagen live, user-setup no crearía el usuario de la sesión de prueba.)
@@ -70,6 +125,16 @@ chmod +x /etc/skel/Escritorio/*.desktop 2>/dev/null || true
 # ---------- Wi-Fi escolar "Estudiantes" (NetworkManager exige permisos 600 de root) ----------
 chown root:root /etc/NetworkManager/system-connections/Estudiantes.nmconnection 2>/dev/null || true
 chmod 600 /etc/NetworkManager/system-connections/Estudiantes.nmconnection 2>/dev/null || true
+# Los archivos copiados desde Windows llegan como ejecutables: systemd se queja (journald.conf.d/ombu.conf) y puede ignorarlos
+find /etc/systemd /etc/lightdm /etc/X11/xorg.conf.d /etc/NetworkManager/conf.d /etc/modprobe.d -type f \( -name '*.conf' -o -name '*.service' -o -name '*.timer' \) -exec chmod 644 {} + 2>/dev/null || true
+# Zona horaria de la sesión en vivo (live-config deja America/Adak con zonas de dos barras)
+systemctl enable ombu-zona-horaria.service 2>/dev/null || true
+# Restaurar Ombú: el estado inicial se crea solo en el sistema instalado (la unidad no corre en el live)
+systemctl enable ombu-snapshot-inicial.timer 2>/dev/null || true
+chmod 755 /usr/bin/ombu-restaurar /usr/lib/ombu/restaurar/* 2>/dev/null || true
+# Centro de software Ombú: el catálogo (usr/share/ombu/centro/catalogo.tsv) manda; lo que no esté ahí no se instala
+chmod 755 /usr/bin/ombu-centro /usr/bin/ombu-salir /usr/bin/ombu-theft-deterrent /usr/bin/ombu-atajos /usr/bin/ombu-ventana /usr/lib/ombu/theft-deterrent/ombu-td-root /usr/bin/ombu-cerrar-ventana /usr/lib/ombu/centro/* 2>/dev/null || true
+chmod 644 /usr/share/ombu/centro/catalogo.tsv 2>/dev/null || true
 
 # ---------- Firefox: políticas (sin telemetría) ----------
 # Firefox lee /etc/firefox/policies/policies.json; se deja también junto al binario
@@ -80,8 +145,24 @@ cp /etc/firefox/policies/policies.json "$FFDIST/policies.json"
 update-alternatives --set x-www-browser /usr/bin/firefox-esr 2>/dev/null || true
 update-alternatives --set gnome-www-browser /usr/bin/firefox-esr 2>/dev/null || true
 
+# ---------- Batería: avisos del sistema (UPower) más tempranos; los avisos con sonido los da /usr/lib/ombu/aviso-bateria ----------
+if [ -f /etc/UPower/UPower.conf ]; then
+    sed -i -e 's/^PercentageLow=.*/PercentageLow=30.0/' -e 's/^PercentageCritical=.*/PercentageCritical=10.0/' \
+        -e 's/^PercentageAction=.*/PercentageAction=5.0/' -e 's/^CriticalPowerAction=.*/CriticalPowerAction=PowerOff/' /etc/UPower/UPower.conf
+fi
+chmod 755 /usr/lib/ombu/aviso-sin-mouse /usr/bin/ombu-cerrar-ventana /usr/lib/ombu/sonidos /usr/lib/ombu/aviso-bateria /usr/lib/ombu/ordenar-escritorio /usr/lib/ombu/session-setup 2>/dev/null || true
+
+# ---------- Arreglos de la prueba remota en la G5 (23/11/2026) ----------
+# Los lanzadores de inicio automático llegan como ejecutables desde Windows: systemd avisa y puede ignorarlos
+chmod 644 /etc/xdg/autostart/*.desktop 2>/dev/null || true
+# Idiomas: solo español e inglés (los demás pesaban ~390 MB en /usr/share/locale y ~110 MB en Chromium)
+find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name 'es*' ! -name 'en*' ! -name 'locale.alias' -exec rm -rf {} + 2>/dev/null || true
+if [ -d /usr/lib/chromium/locales ]; then
+    find /usr/lib/chromium/locales -name '*.pak' ! -name 'es*' ! -name 'en-US*' -delete 2>/dev/null || true
+fi
+
 # ---------- Servicios que no hacen falta ----------
-for s in ModemManager.service cups-browsed.service; do
+for s in ModemManager.service cups-browsed.service blueman-mechanism.service console-setup.service e2scrub_reap.service; do
     systemctl disable "$s" 2>/dev/null || true
 done
 

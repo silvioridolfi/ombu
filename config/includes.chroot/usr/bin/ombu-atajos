@@ -1,0 +1,27 @@
+#!/bin/bash
+# Ombú — «Atajos de teclado»: lista corta de las combinaciones de teclas, iguales o parecidas a las de Windows.
+exec zenity --list --title="Atajos de teclado" --window-icon=input-keyboard --width=640 --height=560 \
+    --text="Las combinaciones más usadas. «Win» es la tecla con el logo de Windows (la tecla Super)." \
+    --column="Tecla" --column="Qué hace" \
+    "Win" "Abre el menú de Ombú" \
+    "Win + D   o   Win + M" "Muestra el escritorio; otra vez, vuelve a las ventanas" \
+    "Win + E" "Abre «Mi Equipo» (archivos)" \
+    "Win + R" "Ejecutar un programa escribiendo su nombre" \
+    "Win + S" "Buscar programas" \
+    "Win + I" "Panel de control (configuración)" \
+    "Win + L   o   Ctrl + Alt + L" "Cierra la sesión (vas a la pantalla de ingreso)" \
+    "Win + P" "Pantalla externa o proyector" \
+    "Win + Mayús + S" "Captura de un pedazo de la pantalla" \
+    "Impr Pant" "Captura de toda la pantalla" \
+    "Alt + Impr Pant" "Captura de la ventana activa" \
+    "Win + ←   /   Win + →" "Acomoda la ventana en la mitad izquierda o derecha" \
+    "Win + ↑" "Maximiza la ventana" \
+    "Win + ↓" "Minimiza la ventana" \
+    "Alt + Tab" "Cambia entre las ventanas abiertas" \
+    "Alt + F4" "Cierra la ventana (en el escritorio, abre el menú de apagar)" \
+    "Ctrl + Alt + Supr" "Menú de apagar, reiniciar o cerrar sesión" \
+    "Ctrl + Mayús + Esc" "Administrador de tareas" \
+    "Ctrl + Alt + T" "Terminal" \
+    "Ctrl + C   /   Ctrl + X   /   Ctrl + V" "Copiar, cortar y pegar" \
+    "Ctrl + Z   /   Ctrl + Y" "Deshacer y rehacer" \
+    "F2   /   F5" "Cambiar el nombre de un archivo   /   actualizar la carpeta"

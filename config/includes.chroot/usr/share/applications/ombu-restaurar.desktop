@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Restaurar Ombú
+GenericName=Volver a un estado anterior
+Comment=Vuelve los programas y la configuración del sistema a un estado anterior sin tocar tus archivos
+Exec=ombu-restaurar
+Icon=ombu-restaurar
+Terminal=false
+Categories=System;Settings;
+Keywords=restaurar;recuperar;reparar;volver;sistema;
